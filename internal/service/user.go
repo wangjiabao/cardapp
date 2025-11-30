@@ -148,14 +148,6 @@ func (u *UserService) CreateNonce(ctx context.Context, req *pb.CreateNonceReques
 func (u *UserService) EthAuthorize(ctx context.Context, req *pb.EthAuthorizeRequest) (*pb.EthAuthorizeReply, error) {
 	userAddress := req.SendBody.Address // 以太坊账户
 
-	if "" == userAddress || 20 > len(userAddress) ||
-		strings.EqualFold("0x000000000000000000000000000000000000dead", userAddress) {
-		return &pb.EthAuthorizeReply{
-			Token:  "",
-			Status: "账户地址参数错误",
-		}, nil
-	}
-
 	if 10 >= len(req.SendBody.Sign) {
 		return &pb.EthAuthorizeReply{
 			Token:  "",
