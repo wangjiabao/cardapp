@@ -749,6 +749,7 @@ func (uuc *UserUseCase) OpenCard(ctx context.Context, req *pb.OpenCardRequest, u
 		user       *User
 		err        error
 		cardAmount float64
+		token      string
 	)
 
 	user, err = uuc.repo.GetUserById(userId)
@@ -773,9 +774,9 @@ func (uuc *UserUseCase) OpenCard(ctx context.Context, req *pb.OpenCardRequest, u
 	}
 	cardAmount = 15
 
-	if 1 > len(req.SendBody.Email) || len(req.SendBody.Email) > 99 {
-		return &pb.OpenCardReply{Status: "邮箱错误"}, nil
-	}
+	//if 1 > len(req.SendBody.Email) || len(req.SendBody.Email) > 99 {
+	//	return &pb.OpenCardReply{Status: "邮箱错误"}, nil
+	//}
 
 	req.SendBody.FirstName = "zhizhi"
 	//if 1 > len(req.SendBody.FirstName) || len(req.SendBody.FirstName) > 44 {
@@ -818,6 +819,38 @@ func (uuc *UserUseCase) OpenCard(ctx context.Context, req *pb.OpenCardRequest, u
 	req.SendBody.BirthDate = "1983-10-10"
 	//if 1 > len(req.SendBody.BirthDate) || len(req.SendBody.BirthDate) > 99 {
 	//	return &pb.OpenCardReply{Status: "生日错误"}, nil
+	//}
+
+	fmt.Println(1)
+
+	// 1. 先拿 Interlace accessToken（这里会自动缓存）
+	token, err = GetInterlaceAccessToken(ctx)
+	if err != nil {
+		fmt.Println("get interlace access token error:", err)
+		return &pb.OpenCardReply{Status: "获取授权失败"}, nil
+	}
+
+	fmt.Println(token)
+
+	return &pb.OpenCardReply{Status: token}, nil
+
+	//// 2. 调 Interlace 的创建 Cardholder 接口（示意：你后面会把 CreateCardholderRequest 换成新的）
+	//holderID, err := InterlaceCreateCardholder(ctx, token, &User{
+	//	FirstName: req.SendBody.FirstName,
+	//	LastName:  req.SendBody.LastName,
+	//	Email:     req.SendBody.Email,
+	//	// ... 其它字段
+	//})
+	//if err != nil {
+	//	fmt.Println("create interlace cardholder error:", err)
+	//	return &pb.OpenCardReply{Status: "创建持卡人失败"}, nil
+	//}
+
+	//// 3. 再调 Interlace 发卡接口（Create Prepaid Card），拿到 cardId、binId 等
+	//cardID, err := InterlaceCreatePrepaidCard(ctx, token, holderID, /* 其它参数 */)
+	//if err != nil {
+	//	fmt.Println("create interlace card error:", err)
+	//	return &pb.OpenCardReply{Status: "创建卡片失败"}, nil
 	//}
 
 	var (
@@ -1948,4 +1981,230 @@ func GetCardInfoRequestWithSign(cardId string) (*CardInfoResponse, error) {
 	}
 
 	return &result, nil
+}
+
+// ================= Interlace 授权配置 & 缓存 =================
+
+const (
+	interlaceBaseURL      = "https://api-sandbox.interlace.money/open-api/v3"
+	interlaceClientID     = "interlacedc0330757f216112"
+	interlaceClientSecret = "c0d8019217ad4903bf09336320a4ddd9" // v3 的接口目前用不到 secret，但建议以后放到配置/环境变量
+)
+
+// 缓存在当前进程里，如果你将来多实例部署/重启频繁，可以再扩展成 Redis 存储
+type interlaceAuthCache struct {
+	AccessToken  string
+	RefreshToken string
+	ExpireAt     int64 // unix 秒，提前留一点余量
+}
+
+var (
+	interlaceAuth    = &interlaceAuthCache{}
+	interlaceAuthMux sync.Mutex
+)
+
+// GetInterlaceAccessToken 获取一个当前可用的 accessToken
+// 1. 如果缓存里有且没过期，直接返回
+// 2. 否则调用 GetCode + Generate Access Token 重新获取
+func GetInterlaceAccessToken(ctx context.Context) (string, error) {
+	interlaceAuthMux.Lock()
+	defer interlaceAuthMux.Unlock()
+
+	now := time.Now().Unix()
+	// 缓存未过期，直接用（提前 60 秒过期，避免边界）
+	if interlaceAuth.AccessToken != "" && now < interlaceAuth.ExpireAt-60 {
+		return interlaceAuth.AccessToken, nil
+	}
+
+	// 这里可以先尝试用 refreshToken 刷新（如果你想用 refresh-token 接口）
+	// 为了简单稳定，这里直接重新 Get Code + Access Token
+	code, err := interlaceGetCode(ctx)
+	if err != nil {
+		return "", fmt.Errorf("get interlace code failed: %w", err)
+	}
+
+	accessToken, refreshToken, expiresIn, err := interlaceGenerateAccessToken(ctx, code)
+	if err != nil {
+		return "", fmt.Errorf("generate interlace access token failed: %w", err)
+	}
+
+	interlaceAuth.AccessToken = accessToken
+	interlaceAuth.RefreshToken = refreshToken
+	interlaceAuth.ExpireAt = time.Now().Unix() + expiresIn
+
+	return accessToken, nil
+}
+
+// Get a code 响应结构
+type interlaceGetCodeResp struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		Timestamp int64  `json:"timestamp"`
+		Code      string `json:"code"`
+	} `json:"data"`
+}
+
+func interlaceGetCode(ctx context.Context) (string, error) {
+	urlStr := fmt.Sprintf("%s/oauth/authorize?clientId=%s", interlaceBaseURL, interlaceClientID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlStr, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Accept", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("interlace get code http %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result interlaceGetCodeResp
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", fmt.Errorf("interlace get code unmarshal: %w", err)
+	}
+
+	if result.Code != "000000" {
+		return "", fmt.Errorf("interlace get code failed: code=%s msg=%s", result.Code, result.Message)
+	}
+	if result.Data.Code == "" {
+		return "", fmt.Errorf("interlace get code success but orderId empty")
+	}
+
+	return result.Data.Code, nil
+}
+
+// Generate an access token 响应结构
+type interlaceAccessTokenResp struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		AccessToken  string `json:"accessToken"`
+		RefreshToken string `json:"refreshToken"`
+		ExpiresIn    int64  `json:"expiresIn"` // 有效期秒数，比如 86400
+		Timestamp    int64  `json:"timestamp"`
+	} `json:"data"`
+}
+
+func interlaceGenerateAccessToken(ctx context.Context, code string) (accessToken, refreshToken string, expiresIn int64, err error) {
+	urlStr := fmt.Sprintf("%s/oauth/access-token", interlaceBaseURL)
+
+	reqBody := map[string]interface{}{
+		"clientId": interlaceClientID,
+		"code":     code,
+	}
+	jsonData, _ := json.Marshal(reqBody)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, urlStr, bytes.NewReader(jsonData))
+	if err != nil {
+		return "", "", 0, err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", "", 0, err
+	}
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", 0, err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", "", 0, fmt.Errorf("interlace access-token http %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result interlaceAccessTokenResp
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", "", 0, fmt.Errorf("interlace access-token unmarshal: %w", err)
+	}
+
+	if result.Code != "000000" {
+		return "", "", 0, fmt.Errorf("interlace access-token failed: code=%s msg=%s", result.Code, result.Message)
+	}
+	if result.Data.AccessToken == "" {
+		return "", "", 0, fmt.Errorf("interlace access-token success but accessToken empty")
+	}
+
+	return result.Data.AccessToken, result.Data.RefreshToken, result.Data.ExpiresIn, nil
+}
+
+func InterlaceCreateCardholder(ctx context.Context, token string, user *User) (string, error) {
+	urlStr := interlaceBaseURL + "/cardholders"
+
+	reqBody := map[string]interface{}{
+		"programType": "BUSINESS USE - MOR", // 你用的是商户代收付 Mor 模式
+		// "binId": ...,
+		"name": map[string]interface{}{
+			"firstName": user.FirstName,
+			"lastName":  user.LastName,
+		},
+		"email": user.Email,
+		// 其它字段按文档补
+	}
+	jsonData, _ := json.Marshal(reqBody)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, urlStr, bytes.NewReader(jsonData))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("create cardholder http %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		Code    string          `json:"code"`
+		Message string          `json:"message"`
+		Data    json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", err
+	}
+	if result.Code != "000000" {
+		return "", fmt.Errorf("create cardholder failed: %s", result.Message)
+	}
+
+	// 解析真实的 cardholderId 字段（按 Cardholder 文档来）
+	var data struct {
+		CardholderID string `json:"cardholderId"`
+	}
+	if err := json.Unmarshal(result.Data, &data); err != nil {
+		return "", err
+	}
+	if data.CardholderID == "" {
+		return "", fmt.Errorf("cardholderId empty")
+	}
+
+	return data.CardholderID, nil
 }
