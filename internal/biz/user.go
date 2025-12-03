@@ -636,8 +636,8 @@ func (uuc *UserUseCase) SetVip(ctx context.Context, req *pb.SetVipRequest, userI
 		return &pb.SetVipReply{Status: "目标用户不存在"}, nil
 	}
 
-	if 0 > req.SendBody.Vip || 9 < req.SendBody.Vip {
-		return &pb.SetVipReply{Status: "vip等级必须在0-9之间"}, nil
+	if 0 > req.SendBody.Vip || 14 < req.SendBody.Vip {
+		return &pb.SetVipReply{Status: "vip等级必须在0-14之间"}, nil
 	}
 
 	if req.SendBody.Vip >= user.Vip {
