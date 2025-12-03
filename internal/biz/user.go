@@ -749,7 +749,6 @@ func (uuc *UserUseCase) OpenCard(ctx context.Context, req *pb.OpenCardRequest, u
 		user       *User
 		err        error
 		cardAmount float64
-		token      string
 	)
 
 	user, err = uuc.repo.GetUserById(userId)
@@ -761,103 +760,28 @@ func (uuc *UserUseCase) OpenCard(ctx context.Context, req *pb.OpenCardRequest, u
 		return &pb.OpenCardReply{Status: "提交已经5次。联系管理员"}, nil
 	}
 
-	if "no" != user.CardNumber {
-		return &pb.OpenCardReply{Status: "已经开卡"}, nil
-	}
-
 	if "no" != user.CardOrderId {
 		return &pb.OpenCardReply{Status: "已经提交开卡信息"}, nil
 	}
+
+	//if "no" != user.CardNumber {
+	//	return &pb.OpenCardReply{Status: "已经开卡"}, nil
+	//}
 
 	if 15 > uint64(user.Amount) {
 		return &pb.OpenCardReply{Status: "账号余额不足15u"}, nil
 	}
 	cardAmount = 15
 
-	//if 1 > len(req.SendBody.Email) || len(req.SendBody.Email) > 99 {
-	//	return &pb.OpenCardReply{Status: "邮箱错误"}, nil
-	//}
-
-	req.SendBody.FirstName = "zhizhi"
-	//if 1 > len(req.SendBody.FirstName) || len(req.SendBody.FirstName) > 44 {
-	//	return &pb.OpenCardReply{Status: "名字错误"}, nil
-	//}
-
-	req.SendBody.LastName = "wang"
-	//if 1 > len(req.SendBody.LastName) || len(req.SendBody.LastName) > 44 {
-	//	return &pb.OpenCardReply{Status: "姓错误"}, nil
-	//}
-
-	//if 1 > len(req.SendBody.Phone) || len(req.SendBody.Phone) > 44 {
-	//	return &pb.OpenCardReply{Status: "手机号错误"}, nil
-	//}
-	//
-	//if 1 > len(req.SendBody.CountryCode) || len(req.SendBody.CountryCode) > 44 {
-	//	return &pb.OpenCardReply{Status: "国家代码错误"}, nil
-	//}
-
-	req.SendBody.Street = "Panyu"
-	//if 1 > len(req.SendBody.Street) || len(req.SendBody.Street) > 99 {
-	//	return &pb.OpenCardReply{Status: "街道错误"}, nil
-	//}
-
-	req.SendBody.City = "Guangzhou"
-	//if 1 > len(req.SendBody.City) || len(req.SendBody.City) > 99 {
-	//	return &pb.OpenCardReply{Status: "城市错误"}, nil
-	//}
-
-	req.SendBody.Country = "China"
-	//if 1 > len(req.SendBody.Country) || len(req.SendBody.Country) > 99 {
-	//	return &pb.OpenCardReply{Status: "国家错误"}, nil
-	//}
-
-	req.SendBody.PostalCode = "511400"
-	//if 1 > len(req.SendBody.PostalCode) || len(req.SendBody.PostalCode) > 99 {
-	//	return &pb.OpenCardReply{Status: "邮政编码错误"}, nil
-	//}
-
-	req.SendBody.BirthDate = "1983-10-10"
-	//if 1 > len(req.SendBody.BirthDate) || len(req.SendBody.BirthDate) > 99 {
-	//	return &pb.OpenCardReply{Status: "生日错误"}, nil
-	//}
-
-	fmt.Println(1)
-
-	// 1. 先拿 Interlace accessToken（这里会自动缓存）
-	token, err = GetInterlaceAccessToken(ctx)
-	if err != nil {
-		fmt.Println("get interlace access token error:", err)
-		return &pb.OpenCardReply{Status: "获取授权失败"}, nil
+	if 1 > len(req.SendBody.Email) || len(req.SendBody.Email) > 99 {
+		return &pb.OpenCardReply{Status: "邮箱错误"}, nil
 	}
 
-	fmt.Println(token)
-
-	return &pb.OpenCardReply{Status: token}, nil
-
-	//// 2. 调 Interlace 的创建 Cardholder 接口（示意：你后面会把 CreateCardholderRequest 换成新的）
-	//holderID, err := InterlaceCreateCardholder(ctx, token, &User{
-	//	FirstName: req.SendBody.FirstName,
-	//	LastName:  req.SendBody.LastName,
-	//	Email:     req.SendBody.Email,
-	//	// ... 其它字段
-	//})
-	//if err != nil {
-	//	fmt.Println("create interlace cardholder error:", err)
-	//	return &pb.OpenCardReply{Status: "创建持卡人失败"}, nil
-	//}
-
-	//// 3. 再调 Interlace 发卡接口（Create Prepaid Card），拿到 cardId、binId 等
-	//cardID, err := InterlaceCreatePrepaidCard(ctx, token, holderID, /* 其它参数 */)
-	//if err != nil {
-	//	fmt.Println("create interlace card error:", err)
-	//	return &pb.OpenCardReply{Status: "创建卡片失败"}, nil
-	//}
-
-	var (
-		HolderID        string
-		productIdUseTwo string
-		maxCardQuotaTwo uint64
-	)
+	//var (
+	//	HolderID        string
+	//	productIdUseTwo string
+	//	maxCardQuotaTwo uint64
+	//)
 	//if 5 < len(user.CardUserId) {
 	//HolderID = user.CardUserId
 	//productIdUseTwo = user.ProductId
@@ -929,12 +853,12 @@ func (uuc *UserUseCase) OpenCard(ctx context.Context, req *pb.OpenCardRequest, u
 	//}
 
 	//} else {
-	var (
-		//products          *CardProductListResponse
-		productIdUse             = "1923750198816256002"
-		productIdUseInt64 uint64 = 1923750198816256002
-		maxCardQuota      uint64 = 100
-	)
+	//var (
+	//products          *CardProductListResponse
+	//productIdUse             = "1923750198816256002"
+	//productIdUseInt64 uint64 = 1923750198816256002
+	//maxCardQuota      uint64 = 100
+	//)
 	//products, err = GetCardProducts()
 	//if nil == products || nil != err {
 	//	//fmt.Println("产品信息错误1")
@@ -966,67 +890,54 @@ func (uuc *UserUseCase) OpenCard(ctx context.Context, req *pb.OpenCardRequest, u
 	//}
 
 	// 请求
-	var (
-		countryCode        = "CN"
-		basePhone          = uint64(13077000000)
-		resCreatCardholder *CreateCardholderResponse
-	)
-
-	if 0 < user.UserCount {
-		basePhone += user.UserCount * 100000
-	}
-
-	phone := strconv.FormatUint(basePhone+userId, 10)
-
-	resCreatCardholder, err = CreateCardholderRequest(productIdUseInt64, &User{
-		FirstName: req.SendBody.FirstName,
-		LastName:  req.SendBody.LastName,
-		Email:     req.SendBody.Email,
-		//CountryCode: req.SendBody.CountryCode,
-		//Phone:       req.SendBody.Phone,
-		CountryCode: countryCode,
-		Phone:       phone,
-		City:        req.SendBody.City,
-		Country:     req.SendBody.Country,
-		Street:      req.SendBody.Street,
-		PostalCode:  req.SendBody.PostalCode,
-		BirthDate:   req.SendBody.BirthDate,
-	})
-	if nil == resCreatCardholder || err != nil {
-		fmt.Println("持卡人订单创建失败:", user, resCreatCardholder, err)
-		return &pb.OpenCardReply{Status: "请求创建持卡人系统错误"}, nil
-	}
-	if 200 != resCreatCardholder.Code {
-		fmt.Println("请求创建持卡人系统错误", user, resCreatCardholder, err)
-		return &pb.OpenCardReply{Status: "请求创建持卡人系统错误" + resCreatCardholder.Msg}, nil
-	}
-
-	if 0 > len(resCreatCardholder.Data.HolderID) {
-		fmt.Println("持卡人订单信息错误", user, resCreatCardholder, err)
-		return &pb.OpenCardReply{Status: "请求创建持卡人系统错误，信息缺失"}, nil
-	}
-
-	fmt.Println("持卡人信息", user, resCreatCardholder)
-	HolderID = resCreatCardholder.Data.HolderID
-	maxCardQuotaTwo = maxCardQuota
-	productIdUseTwo = productIdUse
+	//var (
+	//	countryCode        = "CN"
+	//	basePhone          = uint64(13077000000)
+	//	resCreatCardholder *CreateCardholderResponse
+	//)
+	//
+	//if 0 < user.UserCount {
+	//	basePhone += user.UserCount * 100000
+	//}
+	//
+	//phone := strconv.FormatUint(basePhone+userId, 10)
+	//
+	//resCreatCardholder, err = CreateCardholderRequest(productIdUseInt64, &User{
+	//	FirstName: req.SendBody.FirstName,
+	//	LastName:  req.SendBody.LastName,
+	//	Email:     req.SendBody.Email,
+	//	//CountryCode: req.SendBody.CountryCode,
+	//	//Phone:       req.SendBody.Phone,
+	//	CountryCode: countryCode,
+	//	Phone:       phone,
+	//	City:        req.SendBody.City,
+	//	Country:     req.SendBody.Country,
+	//	Street:      req.SendBody.Street,
+	//	PostalCode:  req.SendBody.PostalCode,
+	//	BirthDate:   req.SendBody.BirthDate,
+	//})
+	//if nil == resCreatCardholder || err != nil {
+	//	fmt.Println("持卡人订单创建失败:", user, resCreatCardholder, err)
+	//	return &pb.OpenCardReply{Status: "请求创建持卡人系统错误"}, nil
+	//}
+	//if 200 != resCreatCardholder.Code {
+	//	fmt.Println("请求创建持卡人系统错误", user, resCreatCardholder, err)
+	//	return &pb.OpenCardReply{Status: "请求创建持卡人系统错误" + resCreatCardholder.Msg}, nil
+	//}
+	//
+	//if 0 > len(resCreatCardholder.Data.HolderID) {
+	//	fmt.Println("持卡人订单信息错误", user, resCreatCardholder, err)
+	//	return &pb.OpenCardReply{Status: "请求创建持卡人系统错误，信息缺失"}, nil
+	//}
+	//
+	//fmt.Println("持卡人信息", user, resCreatCardholder)
+	//HolderID = resCreatCardholder.Data.HolderID
+	//maxCardQuotaTwo = maxCardQuota
+	//productIdUseTwo = productIdUse
 
 	if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
 		err = uuc.repo.CreateCard(ctx, userId, &User{
-			Amount:       cardAmount,
-			CardUserId:   HolderID,
-			MaxCardQuota: maxCardQuotaTwo,
-			ProductId:    productIdUseTwo,
-			FirstName:    req.SendBody.FirstName,
-			LastName:     req.SendBody.LastName,
-			Email:        req.SendBody.Email,
-			CountryCode:  countryCode,
-			Phone:        phone,
-			City:         req.SendBody.City,
-			Country:      req.SendBody.Country,
-			Street:       req.SendBody.Street,
-			PostalCode:   req.SendBody.PostalCode,
-			BirthDate:    req.SendBody.BirthDate,
+			Amount: cardAmount,
 		})
 		if nil != err {
 			return err
@@ -1989,6 +1900,7 @@ const (
 	interlaceBaseURL      = "https://api-sandbox.interlace.money/open-api/v3"
 	interlaceClientID     = "interlacedc0330757f216112"
 	interlaceClientSecret = "c0d8019217ad4903bf09336320a4ddd9" // v3 的接口目前用不到 secret，但建议以后放到配置/环境变量
+	interlaceAccountId    = "571795"
 )
 
 // 缓存在当前进程里，如果你将来多实例部署/重启频繁，可以再扩展成 Redis 存储
@@ -2146,65 +2058,4 @@ func interlaceGenerateAccessToken(ctx context.Context, code string) (accessToken
 	}
 
 	return result.Data.AccessToken, result.Data.RefreshToken, result.Data.ExpiresIn, nil
-}
-
-func InterlaceCreateCardholder(ctx context.Context, token string, user *User) (string, error) {
-	urlStr := interlaceBaseURL + "/cardholders"
-
-	reqBody := map[string]interface{}{
-		"programType": "BUSINESS USE - MOR", // 你用的是商户代收付 Mor 模式
-		// "binId": ...,
-		"name": map[string]interface{}{
-			"firstName": user.FirstName,
-			"lastName":  user.LastName,
-		},
-		"email": user.Email,
-		// 其它字段按文档补
-	}
-	jsonData, _ := json.Marshal(reqBody)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, urlStr, bytes.NewReader(jsonData))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	body, _ := ioutil.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("create cardholder http %d: %s", resp.StatusCode, string(body))
-	}
-
-	var result struct {
-		Code    string          `json:"code"`
-		Message string          `json:"message"`
-		Data    json.RawMessage `json:"data"`
-	}
-	if err := json.Unmarshal(body, &result); err != nil {
-		return "", err
-	}
-	if result.Code != "000000" {
-		return "", fmt.Errorf("create cardholder failed: %s", result.Message)
-	}
-
-	// 解析真实的 cardholderId 字段（按 Cardholder 文档来）
-	var data struct {
-		CardholderID string `json:"cardholderId"`
-	}
-	if err := json.Unmarshal(result.Data, &data); err != nil {
-		return "", err
-	}
-	if data.CardholderID == "" {
-		return "", fmt.Errorf("cardholderId empty")
-	}
-
-	return data.CardholderID, nil
 }
