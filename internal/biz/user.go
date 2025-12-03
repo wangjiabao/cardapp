@@ -1029,10 +1029,6 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 		return &pb.OpenCardReply{Status: "邮政编码错误"}, nil
 	}
 
-	if 1 > len(req.SendBody.BirthDate) || len(req.SendBody.BirthDate) > 99 {
-		return &pb.OpenCardReply{Status: "生日错误"}, nil
-	}
-
 	if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
 		err = uuc.repo.CreateCardTwo(ctx, userId, &User{
 			Amount:      cardAmount,
@@ -1045,7 +1041,6 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 			Country:     req.SendBody.Country,
 			Street:      req.SendBody.Street,
 			PostalCode:  req.SendBody.PostalCode,
-			BirthDate:   req.SendBody.BirthDate,
 		})
 		if nil != err {
 			return err
