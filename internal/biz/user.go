@@ -155,6 +155,7 @@ func (uuc *UserUseCase) GetUserById(userId uint64) (*pb.GetUserReply, error) {
 		myUserRecommendAddress string
 		err                    error
 		withdrawRate           float64
+		cardTwo                string
 	)
 
 	var (
@@ -167,6 +168,10 @@ func (uuc *UserUseCase) GetUserById(userId uint64) (*pb.GetUserReply, error) {
 		for _, vConfig := range configs {
 			if "withdraw_rate" == vConfig.KeyName {
 				withdrawRate, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+
+			if "card_two" == vConfig.KeyName {
+				cardTwo = vConfig.Value
 			}
 		}
 	}
@@ -238,6 +243,7 @@ func (uuc *UserUseCase) GetUserById(userId uint64) (*pb.GetUserReply, error) {
 		CardStatusTwo:    user.CardTwo,
 		CanVip:           user.CanVip,
 		VipThree:         user.VipThree,
+		CardTwo:          cardTwo,
 	}, nil
 }
 
@@ -993,7 +999,7 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 		return &pb.OpenCardReply{Status: "已提交"}, nil
 	}
 
-	if 199 > uint64(user.Amount) {
+	if uint64(cardAmount) > uint64(user.Amount) {
 		return &pb.OpenCardReply{Status: "账号余额不足199u"}, nil
 	}
 

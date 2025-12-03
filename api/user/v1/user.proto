@@ -159,6 +159,7 @@ message GetUserReply {
 	double withdrawRate = 10;
 	uint64 canVip = 12;
 	uint64 vipThree = 13;
+	string cardTwo = 14;
 }
 
 message RecommendListRequest {
