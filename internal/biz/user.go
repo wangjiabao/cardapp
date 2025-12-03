@@ -389,6 +389,10 @@ func (uuc *UserUseCase) OrderList(ctx context.Context, req *pb.OrderListRequest,
 		}, nil
 	}
 
+	return &pb.OrderListReply{Status: "ok", Count: 0,
+		List: res,
+	}, nil
+
 	var (
 		resGet *CardTransactionListResponse
 	)
@@ -1125,34 +1129,34 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 		}, nil
 	}
 
-	// 划转
-	var (
-		cardRes *CardRechargeResponse
-	)
-	cardRes, err = RechargeCard(user.Card, req.SendBody.Amount)
-	if nil != err || nil == cardRes || 200 != cardRes.Code {
-		return &pb.AmountToCardReply{Status: "划转失败"}, nil
-	}
+	//// 划转
+	//var (
+	//	cardRes *CardRechargeResponse
+	//)
+	//cardRes, err = RechargeCard(user.Card, req.SendBody.Amount)
+	//if nil != err || nil == cardRes || 200 != cardRes.Code {
+	//	return &pb.AmountToCardReply{Status: "划转失败"}, nil
+	//}
+	//
+	//if "PROCESSING" != cardRes.Data.OrderStatus && "SUCCESS" != cardRes.Data.OrderStatus {
+	//	return &pb.AmountToCardReply{
+	//		Status: "创建订单失败，联系管理员",
+	//	}, nil
+	//}
 
-	if "PROCESSING" != cardRes.Data.OrderStatus && "SUCCESS" != cardRes.Data.OrderStatus {
-		return &pb.AmountToCardReply{
-			Status: "创建订单失败，联系管理员",
-		}, nil
-	}
-
-	if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
-		err = uuc.repo.AmountToCardReward(ctx, userId, float64(req.SendBody.Amount), cardRes.Data.CardOrderID, tmpRewardId)
-		if nil != err {
-			return err
-		}
-
-		return nil
-	}); nil != err {
-		fmt.Println(err, "划转写入mysql错误2", user)
-		return &pb.AmountToCardReply{
-			Status: "划转错误2，联系管理员",
-		}, nil
-	}
+	//if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
+	//	err = uuc.repo.AmountToCardReward(ctx, userId, float64(req.SendBody.Amount), cardRes.Data.CardOrderID, tmpRewardId)
+	//	if nil != err {
+	//		return err
+	//	}
+	//
+	//	return nil
+	//}); nil != err {
+	//	fmt.Println(err, "划转写入mysql错误2", user)
+	//	return &pb.AmountToCardReply{
+	//		Status: "划转错误2，联系管理员",
+	//	}, nil
+	//}
 
 	return &pb.AmountToCardReply{
 		Status: "ok",
@@ -1161,26 +1165,26 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 
 func (uuc *UserUseCase) LookCard(ctx context.Context, req *pb.LookCardRequest, userId uint64) (*pb.LookCardReply, error) {
 	var (
-		user    *User
-		err     error
-		carInfo *CardSensitiveResponse
+		user *User
+		err  error
+		//carInfo *CardSensitiveResponse
 	)
 	user, err = uuc.repo.GetUserById(userId)
 	if nil == user || nil != err {
 		return &pb.LookCardReply{Status: "用户不存在"}, nil
 	}
 
-	carInfo, err = GetCardSensitiveInfo(user.Card)
-	if nil != err || nil == carInfo || 200 != carInfo.Code {
-		return &pb.LookCardReply{Status: "获取数据失败"}, nil
-	}
+	//carInfo, err = GetCardSensitiveInfo(user.Card)
+	//if nil != err || nil == carInfo || 200 != carInfo.Code {
+	//	return &pb.LookCardReply{Status: "获取数据失败"}, nil
+	//}
 
 	return &pb.LookCardReply{
 		Status:      "ok",
-		CardNumber:  carInfo.Data.Pan,
-		Pin:         carInfo.Data.Pin,
-		Expire:      carInfo.Data.Expire,
-		Cvv:         carInfo.Data.CVV,
+		CardNumber:  "",
+		Pin:         "",
+		Expire:      "",
+		Cvv:         "",
 		Email:       user.Email,
 		Phone:       user.Phone,
 		Country:     user.Country,
