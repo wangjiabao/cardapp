@@ -766,8 +766,6 @@ func (uuc *UserUseCase) OpenCard(ctx context.Context, req *pb.OpenCardRequest, u
 		return &pb.OpenCardReply{Status: "用户不存在"}, nil
 	}
 
-	fmt.Println(user)
-
 	if 5 <= user.UserCount {
 		return &pb.OpenCardReply{Status: "提交已经5次。联系管理员"}, nil
 	}
