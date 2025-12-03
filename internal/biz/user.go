@@ -993,8 +993,8 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 		return &pb.OpenCardReply{Status: "已提交"}, nil
 	}
 
-	if 150 > uint64(user.Amount) {
-		return &pb.OpenCardReply{Status: "账号余额不足150u"}, nil
+	if 199 > uint64(user.Amount) {
+		return &pb.OpenCardReply{Status: "账号余额不足199u"}, nil
 	}
 
 	if 1 > len(req.SendBody.Email) || len(req.SendBody.Email) > 99 {
