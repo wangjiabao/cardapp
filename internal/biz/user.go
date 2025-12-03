@@ -214,18 +214,18 @@ func (uuc *UserUseCase) GetUserById(userId uint64) (*pb.GetUserReply, error) {
 			cardStatus = 1
 		} else {
 			cardStatus = 2
-			// 查询状态。成功分红
-			var (
-				resCard *CardInfoResponse
-			)
-			resCard, err = GetCardInfoRequestWithSign(user.Card)
-			if nil == resCard || 200 != resCard.Code || err != nil {
-
-			} else {
-				if "ACTIVE" == resCard.Data.CardStatus {
-					cardAmount = resCard.Data.Balance
-				}
-			}
+			//// 查询状态。成功分红
+			//var (
+			//	resCard *CardInfoResponse
+			//)
+			//resCard, err = GetCardInfoRequestWithSign(user.Card)
+			//if nil == resCard || 200 != resCard.Code || err != nil {
+			//
+			//} else {
+			//	if "ACTIVE" == resCard.Data.CardStatus {
+			//		cardAmount = resCard.Data.Balance
+			//	}
+			//}
 		}
 	}
 
