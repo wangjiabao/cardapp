@@ -46,20 +46,22 @@ type User struct {
 }
 
 type CardTwo struct {
-	ID          uint64    `gorm:"primarykey;type:int"`
-	UserId      uint64    `gorm:"type:int;not null"`
-	FirstName   string    `gorm:"type:varchar(45);not null;default:'no'"`
-	LastName    string    `gorm:"type:varchar(45);not null;default:'no'"`
-	Email       string    `gorm:"type:varchar(100);not null;default:'no'"`
-	CountryCode string    `gorm:"type:varchar(45);not null;default:'no'"`
-	Phone       string    `gorm:"type:varchar(45);not null;default:'no'"`
-	City        string    `gorm:"type:varchar(100);not null;default:'no'"`
-	Country     string    `gorm:"type:varchar(100);not null;default:'no'"`
-	Street      string    `gorm:"type:varchar(100);not null;default:'no'"`
-	PostalCode  string    `gorm:"type:varchar(45);not null;default:'no'"`
-	BirthDate   string    `gorm:"type:varchar(45);not null;default:'no'"`
-	CreatedAt   time.Time `gorm:"type:datetime;not null"`
-	UpdatedAt   time.Time `gorm:"type:datetime;not null"`
+	ID               uint64    `gorm:"primarykey;type:int"`
+	UserId           uint64    `gorm:"type:int;not null"`
+	FirstName        string    `gorm:"type:varchar(45);not null;default:'no'"`
+	LastName         string    `gorm:"type:varchar(45);not null;default:'no'"`
+	Email            string    `gorm:"type:varchar(100);not null;default:'no'"`
+	CountryCode      string    `gorm:"type:varchar(45);not null;default:'no'"`
+	Phone            string    `gorm:"type:varchar(45);not null;default:'no'"`
+	City             string    `gorm:"type:varchar(100);not null;default:'no'"`
+	Country          string    `gorm:"type:varchar(100);not null;default:'no'"`
+	Street           string    `gorm:"type:varchar(100);not null;default:'no'"`
+	PostalCode       string    `gorm:"type:varchar(45);not null;default:'no'"`
+	BirthDate        string    `gorm:"type:varchar(45);not null;default:'no'"`
+	PhoneCountryCode string    `gorm:"type:varchar(45);not null;default:'no'"`
+	State            string    `gorm:"type:varchar(45);not null;default:'no'"`
+	CreatedAt        time.Time `gorm:"type:datetime;not null"`
+	UpdatedAt        time.Time `gorm:"type:datetime;not null"`
 }
 
 type CardRecord struct {
@@ -503,6 +505,8 @@ func (u *UserRepo) CreateCardTwo(ctx context.Context, userId uint64, user *biz.U
 	cardTwo.CountryCode = user.CountryCode
 	cardTwo.Country = user.Country
 	cardTwo.City = user.City
+	cardTwo.State = user.State
+	cardTwo.PhoneCountryCode = user.PhoneCountryCode
 
 	resInsertTwo := u.data.DB(ctx).Table("card_two").Create(&cardTwo)
 	if resInsertTwo.Error != nil || 0 >= resInsertTwo.RowsAffected {

@@ -186,6 +186,8 @@ message OpenCardRequest {
 		string firstName = 3; // 名
 		string lastName = 4; // 姓
 		string countryCode = 5; // 国家代码
+		string phoneCountryCode = 11; // 手机号国家代码，例如：86
+		string state = 13; // 美国或加拿大必须区县代码
 		string phone = 6; // 手机号
 		string city = 7; // 城市
 		string country = 8; // 国家

@@ -22,37 +22,39 @@ import (
 )
 
 type User struct {
-	ID            uint64
-	Address       string
-	Card          string
-	CardNumber    string
-	CardOrderId   string
-	CardAmount    float64
-	Amount        float64
-	AmountTwo     uint64
-	MyTotalAmount uint64
-	IsDelete      uint64
-	Vip           uint64
-	FirstName     string
-	LastName      string
-	Email         string
-	CountryCode   string
-	Phone         string
-	City          string
-	Country       string
-	Street        string
-	PostalCode    string
-	BirthDate     string
-	CardUserId    string
-	ProductId     string
-	MaxCardQuota  uint64
-	UserCount     uint64
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	VipTwo        uint64
-	VipThree      uint64
-	CardTwo       uint64
-	CanVip        uint64
+	ID               uint64
+	Address          string
+	Card             string
+	CardNumber       string
+	CardOrderId      string
+	CardAmount       float64
+	Amount           float64
+	AmountTwo        uint64
+	MyTotalAmount    uint64
+	IsDelete         uint64
+	Vip              uint64
+	FirstName        string
+	LastName         string
+	Email            string
+	CountryCode      string
+	Phone            string
+	PhoneCountryCode string
+	State            string
+	City             string
+	Country          string
+	Street           string
+	PostalCode       string
+	BirthDate        string
+	CardUserId       string
+	ProductId        string
+	MaxCardQuota     uint64
+	UserCount        uint64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	VipTwo           uint64
+	VipThree         uint64
+	CardTwo          uint64
+	CanVip           uint64
 }
 
 type UserRecommend struct {
@@ -1035,18 +1037,24 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 		return &pb.OpenCardReply{Status: "邮政编码错误"}, nil
 	}
 
+	if 1 > len(req.SendBody.PhoneCountryCode) || len(req.SendBody.PhoneCountryCode) > 99 {
+		return &pb.OpenCardReply{Status: "手机号国家代码错误"}, nil
+	}
+
 	if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
 		err = uuc.repo.CreateCardTwo(ctx, userId, &User{
-			Amount:      cardAmount,
-			FirstName:   req.SendBody.FirstName,
-			LastName:    req.SendBody.LastName,
-			Email:       req.SendBody.Email,
-			CountryCode: req.SendBody.CountryCode,
-			Phone:       req.SendBody.Phone,
-			City:        req.SendBody.City,
-			Country:     req.SendBody.Country,
-			Street:      req.SendBody.Street,
-			PostalCode:  req.SendBody.PostalCode,
+			Amount:           cardAmount,
+			FirstName:        req.SendBody.FirstName,
+			LastName:         req.SendBody.LastName,
+			Email:            req.SendBody.Email,
+			CountryCode:      req.SendBody.CountryCode,
+			Phone:            req.SendBody.Phone,
+			City:             req.SendBody.City,
+			Country:          req.SendBody.Country,
+			Street:           req.SendBody.Street,
+			PostalCode:       req.SendBody.PostalCode,
+			State:            req.SendBody.State,
+			PhoneCountryCode: req.SendBody.PhoneCountryCode,
 		})
 		if nil != err {
 			return err

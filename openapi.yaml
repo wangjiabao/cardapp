@@ -489,6 +489,10 @@ components:
                     type: string
                 countryCode:
                     type: string
+                phoneCountryCode:
+                    type: string
+                state:
+                    type: string
                 phone:
                     type: string
                 city:
