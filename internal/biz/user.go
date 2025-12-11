@@ -2108,7 +2108,7 @@ func InterlaceGetCardPrivateAccessToken(ctx context.Context, accountId, cardId s
 		return "", err
 	}
 
-	base := interlaceBaseURL + "/open-api/v3/card-list/" + cardId + "/private-info/access-token"
+	base := interlaceBaseURL + "/card-list/" + cardId + "/private-info/access-token"
 
 	q := url.Values{}
 	q.Set("accountId", accountId)
