@@ -1000,6 +1000,10 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 		return &pb.OpenCardReply{Status: "用户不存在"}, nil
 	}
 
+	if 5 <= user.UserCount {
+		return &pb.OpenCardReply{Status: "提交已经5次。联系管理员"}, nil
+	}
+
 	if 0 < user.CardTwo {
 		return &pb.OpenCardReply{Status: "已提交"}, nil
 	}
