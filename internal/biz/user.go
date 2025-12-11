@@ -528,19 +528,19 @@ func (uuc *UserUseCase) GetExistUserByAddressOrCreate(ctx context.Context, u *Us
 		user          *User
 		recommendUser *UserRecommend
 		err           error
-		configs       []*Config
-		vipMax        uint64
+		//configs       []*Config
+		//vipMax        uint64
 	)
 
 	// 配置
-	configs, err = uuc.repo.GetConfigByKeys("vip_max")
-	if nil != configs {
-		for _, vConfig := range configs {
-			if "vip_max" == vConfig.KeyName {
-				vipMax, _ = strconv.ParseUint(vConfig.Value, 10, 64)
-			}
-		}
-	}
+	//configs, err = uuc.repo.GetConfigByKeys("vip_max")
+	//if nil != configs {
+	//	for _, vConfig := range configs {
+	//		if "vip_max" == vConfig.KeyName {
+	//			vipMax, _ = strconv.ParseUint(vConfig.Value, 10, 64)
+	//		}
+	//	}
+	//}
 
 	recommendUser = &UserRecommend{
 		ID:            0,
@@ -570,7 +570,7 @@ func (uuc *UserUseCase) GetExistUserByAddressOrCreate(ctx context.Context, u *Us
 				return nil, errors.New(500, "USER_ERROR", "无效的推荐码3"), "无效的推荐码3"
 			}
 		} else {
-			u.Vip = vipMax
+			u.Vip = 15
 		}
 
 		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
