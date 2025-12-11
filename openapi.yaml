@@ -450,26 +450,14 @@ components:
             properties:
                 status:
                     type: string
-                cardNumber:
-                    type: string
-                pin:
-                    type: string
-                expire:
-                    type: string
-                cvv:
-                    type: string
-                email:
-                    type: string
-                phone:
-                    type: string
-                country:
-                    type: string
-                countryCode:
+                accessToken:
                     type: string
         LookCardRequest_SendBody:
             type: object
             properties:
                 sign:
+                    type: string
+                cardType:
                     type: string
         OpenCardReply:
             type: object

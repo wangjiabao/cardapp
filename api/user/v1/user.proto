@@ -205,6 +205,7 @@ message OpenCardReply {
 message LookCardRequest {
 	message SendBody {
 		string sign = 1;
+		uint64 cardType = 2;
 	}
 
 	SendBody send_body = 1;
@@ -212,14 +213,7 @@ message LookCardRequest {
 
 message LookCardReply {
 	string status = 1;
-	string cardNumber = 2; // 卡号
-	string pin = 3; // pin
-	string expire = 4;// 有效期
-	string cvv = 5; // cvv
-	string email = 6; // 邮箱
-	string phone = 7; // 手机
-	string country = 8; // 国家
-	string countryCode = 9; // 国家代码
+	string accessToken = 2;
 }
 
 message AmountToCardRequest {

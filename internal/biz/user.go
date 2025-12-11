@@ -55,6 +55,7 @@ type User struct {
 	VipThree         uint64
 	CardTwo          uint64
 	CanVip           uint64
+	CardTwoNumber    string
 }
 
 type UserRecommend struct {
@@ -1174,8 +1175,9 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 
 func (uuc *UserUseCase) LookCard(ctx context.Context, req *pb.LookCardRequest, userId uint64) (*pb.LookCardReply, error) {
 	var (
-		user *User
-		err  error
+		user        *User
+		err         error
+		accessToken string
 		//carInfo *CardSensitiveResponse
 	)
 	user, err = uuc.repo.GetUserById(userId)
@@ -1183,21 +1185,27 @@ func (uuc *UserUseCase) LookCard(ctx context.Context, req *pb.LookCardRequest, u
 		return &pb.LookCardReply{Status: "用户不存在"}, nil
 	}
 
-	//carInfo, err = GetCardSensitiveInfo(user.Card)
-	//if nil != err || nil == carInfo || 200 != carInfo.Code {
-	//	return &pb.LookCardReply{Status: "获取数据失败"}, nil
-	//}
+	if 1 == req.SendBody.CardType {
+		if 10 > len(user.CardTwoNumber) {
+			return &pb.LookCardReply{Status: "未激活虚拟卡"}, nil
+		}
+		accessToken, err = InterlaceGetCardPrivateAccessToken(ctx, interlaceAccountId, user.CardNumber)
+		if nil != err {
+			return &pb.LookCardReply{Status: "查询错误"}, nil
+		}
+	} else if 2 == req.SendBody.CardType {
+		if 10 > len(user.CardTwoNumber) {
+			return &pb.LookCardReply{Status: "未激活实体卡"}, nil
+		}
+		accessToken, err = InterlaceGetCardPrivateAccessToken(ctx, interlaceAccountId, user.CardTwoNumber)
+		if nil != err {
+			return &pb.LookCardReply{Status: "查询错误"}, nil
+		}
+	}
 
 	return &pb.LookCardReply{
 		Status:      "ok",
-		CardNumber:  "",
-		Pin:         "",
-		Expire:      "",
-		Cvv:         "",
-		Email:       user.Email,
-		Phone:       user.Phone,
-		Country:     user.Country,
-		CountryCode: user.CountryCode,
+		AccessToken: accessToken,
 	}, nil
 }
 
@@ -2071,4 +2079,67 @@ func interlaceGenerateAccessToken(ctx context.Context, code string) (accessToken
 	}
 
 	return result.Data.AccessToken, result.Data.RefreshToken, result.Data.ExpiresIn, nil
+}
+
+type InterlaceCardPrivateTokenResp struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		AccessToken string `json:"accessToken"`
+	} `json:"data"`
+}
+
+// InterlaceGetCardPrivateAccessToken 获取某张卡的 iframe 用一次性 accessToken
+func InterlaceGetCardPrivateAccessToken(ctx context.Context, accountId, cardId string) (string, error) {
+	if accountId == "" {
+		return "", fmt.Errorf("accountId is required")
+	}
+	if cardId == "" {
+		return "", fmt.Errorf("cardId is required")
+	}
+
+	accessToken, err := GetInterlaceAccessToken(ctx)
+	if err != nil || accessToken == "" {
+		fmt.Println("获取access token错误")
+		return "", err
+	}
+
+	base := interlaceBaseURL + "/open-api/v3/card-list/" + cardId + "/private-info/access-token"
+
+	q := url.Values{}
+	q.Set("accountId", accountId)
+	urlStr := base + "?" + q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlStr, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("x-access-token", accessToken)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("interlace card private token http %d: %s", resp.StatusCode, string(body))
+	}
+
+	var outer InterlaceCardPrivateTokenResp
+	if err := json.Unmarshal(body, &outer); err != nil {
+		return "", fmt.Errorf("card private token unmarshal: %w", err)
+	}
+	if outer.Code != "000000" {
+		return "", fmt.Errorf("card private token failed: code=%s msg=%s", outer.Code, outer.Message)
+	}
+
+	return outer.Data.AccessToken, nil
 }

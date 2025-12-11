@@ -43,6 +43,7 @@ type User struct {
 	CardTwo       uint64    `gorm:"type:int"`
 	CanVip        uint64    `gorm:"type:int"`
 	VipThree      uint64    `gorm:"type:int"`
+	CardTwoNumber string    `gorm:"type:varchar(100);not null;default:'no'"`
 }
 
 type CardTwo struct {
@@ -231,6 +232,7 @@ func (u *UserRepo) GetUserById(userId uint64) (*biz.User, error) {
 		Card:          user.Card,
 		Amount:        user.Amount,
 		CardNumber:    user.CardNumber,
+		CardTwoNumber: user.CardTwoNumber,
 		CardOrderId:   user.CardOrderId,
 		CreatedAt:     user.CreatedAt,
 		UpdatedAt:     user.UpdatedAt,
