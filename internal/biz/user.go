@@ -1190,7 +1190,7 @@ func (uuc *UserUseCase) LookCard(ctx context.Context, req *pb.LookCardRequest, u
 			return &pb.LookCardReply{Status: "未激活虚拟卡"}, nil
 		}
 		accessToken, err = InterlaceGetCardPrivateAccessToken(ctx, interlaceAccountId, user.CardNumber)
-		if nil != err {
+		if 0 >= len(accessToken) || nil != err {
 			return &pb.LookCardReply{Status: "查询错误"}, nil
 		}
 	} else if 2 == req.SendBody.CardType {
@@ -1198,9 +1198,11 @@ func (uuc *UserUseCase) LookCard(ctx context.Context, req *pb.LookCardRequest, u
 			return &pb.LookCardReply{Status: "未激活实体卡"}, nil
 		}
 		accessToken, err = InterlaceGetCardPrivateAccessToken(ctx, interlaceAccountId, user.CardTwoNumber)
-		if nil != err {
+		if 0 >= len(accessToken) || nil != err {
 			return &pb.LookCardReply{Status: "查询错误"}, nil
 		}
+	} else {
+		return &pb.LookCardReply{Status: "查询参数错误"}, nil
 	}
 
 	return &pb.LookCardReply{
@@ -2128,6 +2130,8 @@ func InterlaceGetCardPrivateAccessToken(ctx context.Context, accountId, cardId s
 	if err != nil {
 		return "", err
 	}
+
+	fmt.Println(string(body))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", fmt.Errorf("interlace card private token http %d: %s", resp.StatusCode, string(body))
