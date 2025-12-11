@@ -127,8 +127,8 @@ type UserRepo interface {
 	GetAllUsers() ([]*User, error)
 	UpdateCard(ctx context.Context, userId uint64, cardOrderId, card string) error
 	CreateCardRecommend(ctx context.Context, userId uint64, amount float64, vip uint64, address string) error
-	AmountToCard(ctx context.Context, userId uint64, amount float64) (uint64, error)
-	AmountToCardReward(ctx context.Context, userId uint64, amount float64, orderId string, rewardId uint64) error
+	AmountToCard(ctx context.Context, userId uint64, amount float64, one uint64) (uint64, error)
+	AmountToCardReward(ctx context.Context, userId uint64, amount float64, orderId string, rewardId uint64, one uint64) error
 	AmountTo(ctx context.Context, userId, toUserId uint64, toAddress string, amount float64) error
 	Withdraw(ctx context.Context, userId uint64, amount, amountRel float64, address string) error
 	GetUserRewardByUserIdPage(ctx context.Context, b *Pagination, userId uint64, reason uint64) ([]*Reward, error, int64)
@@ -1122,63 +1122,124 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 		return &pb.AmountToCardReply{Status: "划转最少20u"}, nil
 	}
 
-	if 5 >= len(user.CardNumber) {
-		return &pb.AmountToCardReply{Status: "无卡片记录"}, nil
-	}
-
-	if 5 >= len(user.Card) {
-		return &pb.AmountToCardReply{Status: "无卡片记录"}, nil
-	}
-
-	tmpRewardId := uint64(0)
-	if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
-		tmpRewardId, err = uuc.repo.AmountToCard(ctx, userId, float64(req.SendBody.Amount))
-		if nil != err {
-			return err
+	if 1 == req.SendBody.ToType {
+		if 2 != user.CardTwo {
+			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通实体卡"}, nil
 		}
 
-		return nil
-	}); nil != err {
-		fmt.Println(err, "划转写入mysql错误", user)
-		return &pb.AmountToCardReply{
-			Status: "划转错误，联系管理员",
-		}, nil
+		if 10 > len(user.CardTwoNumber) {
+			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通实体卡"}, nil
+		}
+
+		tmpRewardId := uint64(0)
+		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
+			tmpRewardId, err = uuc.repo.AmountToCard(ctx, userId, float64(req.SendBody.Amount), 1)
+			if nil != err {
+				return err
+			}
+
+			return nil
+		}); nil != err {
+			fmt.Println(err, "划转写入mysql错误", user)
+			return &pb.AmountToCardReply{
+				Status: "划转错误，联系管理员",
+			}, nil
+		}
+
+		if 0 >= tmpRewardId {
+			return &pb.AmountToCardReply{
+				Status: "划转错误，联系管理员，记录失败",
+			}, nil
+		}
+
+		tmpOrderId := fmt.Sprintf("in-%d", time.Now().UnixNano())
+		// 划转
+		data, errTwo := InterlaceCardTransferIn(ctx, &InterlaceCardTransferInReq{
+			AccountId:           interlaceAccountId,
+			CardId:              user.CardTwoNumber,
+			ClientTransactionId: tmpOrderId,
+			Amount:              fmt.Sprintf("%.2f", float64(req.SendBody.Amount)), // 字符串
+		})
+		if errTwo != nil {
+			fmt.Println("InterlaceCardTransferIn error:", errTwo, data)
+			return &pb.AmountToCardReply{
+				Status: "划转错误，联系管理员，记录失败",
+			}, nil
+		}
+
+		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
+			err = uuc.repo.AmountToCardReward(ctx, userId, float64(req.SendBody.Amount), tmpOrderId, tmpRewardId, 1)
+			if nil != err {
+				return err
+			}
+
+			return nil
+		}); nil != err {
+			fmt.Println(err, "划转写入mysql错误2", user)
+			return &pb.AmountToCardReply{
+				Status: "划转错误2，联系管理员",
+			}, nil
+		}
+
+	} else {
+		if "success" != user.CardOrderId {
+			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通虚拟卡"}, nil
+		}
+
+		if 10 > len(user.CardNumber) {
+			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通实体卡"}, nil
+		}
+
+		tmpRewardId := uint64(0)
+		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
+			tmpRewardId, err = uuc.repo.AmountToCard(ctx, userId, float64(req.SendBody.Amount), 0)
+			if nil != err {
+				return err
+			}
+
+			return nil
+		}); nil != err {
+			fmt.Println(err, "划转写入mysql错误", user)
+			return &pb.AmountToCardReply{
+				Status: "划转错误，联系管理员",
+			}, nil
+		}
+
+		if 0 >= tmpRewardId {
+			return &pb.AmountToCardReply{
+				Status: "划转错误，联系管理员，记录失败",
+			}, nil
+		}
+
+		tmpOrderId := fmt.Sprintf("in-%d", time.Now().UnixNano())
+		// 划转
+		data, errTwo := InterlaceCardTransferIn(ctx, &InterlaceCardTransferInReq{
+			AccountId:           interlaceAccountId,
+			CardId:              user.CardNumber,
+			ClientTransactionId: tmpOrderId,
+			Amount:              fmt.Sprintf("%.2f", float64(req.SendBody.Amount)), // 字符串
+		})
+		if errTwo != nil {
+			fmt.Println("InterlaceCardTransferIn error:", errTwo, data)
+			return &pb.AmountToCardReply{
+				Status: "划转错误，联系管理员，记录失败",
+			}, nil
+		}
+
+		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
+			err = uuc.repo.AmountToCardReward(ctx, userId, float64(req.SendBody.Amount), tmpOrderId, tmpRewardId, 0)
+			if nil != err {
+				return err
+			}
+
+			return nil
+		}); nil != err {
+			fmt.Println(err, "划转写入mysql错误2", user)
+			return &pb.AmountToCardReply{
+				Status: "划转错误2，联系管理员",
+			}, nil
+		}
 	}
-
-	if 0 >= tmpRewardId {
-		return &pb.AmountToCardReply{
-			Status: "划转错误，联系管理员，记录失败",
-		}, nil
-	}
-
-	//// 划转
-	//var (
-	//	cardRes *CardRechargeResponse
-	//)
-	//cardRes, err = RechargeCard(user.Card, req.SendBody.Amount)
-	//if nil != err || nil == cardRes || 200 != cardRes.Code {
-	//	return &pb.AmountToCardReply{Status: "划转失败"}, nil
-	//}
-	//
-	//if "PROCESSING" != cardRes.Data.OrderStatus && "SUCCESS" != cardRes.Data.OrderStatus {
-	//	return &pb.AmountToCardReply{
-	//		Status: "创建订单失败，联系管理员",
-	//	}, nil
-	//}
-
-	//if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
-	//	err = uuc.repo.AmountToCardReward(ctx, userId, float64(req.SendBody.Amount), cardRes.Data.CardOrderID, tmpRewardId)
-	//	if nil != err {
-	//		return err
-	//	}
-	//
-	//	return nil
-	//}); nil != err {
-	//	fmt.Println(err, "划转写入mysql错误2", user)
-	//	return &pb.AmountToCardReply{
-	//		Status: "划转错误2，联系管理员",
-	//	}, nil
-	//}
 
 	return &pb.AmountToCardReply{
 		Status: "ok",
@@ -2171,4 +2232,126 @@ func InterlaceGetCardPrivateAccessToken(ctx context.Context, accountId, cardId s
 	}
 
 	return outer.Data.AccessToken, nil
+}
+
+type InterlaceFeeDetail struct {
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
+	FeeType  string `json:"feeType"`
+}
+
+type InterlaceCardTransferData struct {
+	ID                       string               `json:"id"`
+	AccountId                string               `json:"accountId"`
+	CardId                   string               `json:"cardId"`
+	CardholderId             string               `json:"cardholderId"`
+	CardTransactionId        string               `json:"cardTransactionId"`
+	Currency                 string               `json:"currency"`
+	Amount                   string               `json:"amount"`
+	Fee                      string               `json:"fee"`
+	FeeDetails               []InterlaceFeeDetail `json:"feeDetails"`
+	ClientTransactionId      string               `json:"clientTransactionId"`
+	RelatedCardTransactionId string               `json:"relatedCardTransactionId"`
+	TransactionDisplayId     string               `json:"transactionDisplayId"`
+	Type                     int32                `json:"type"`
+	Status                   string               `json:"status"`
+
+	MerchantName    string `json:"merchantName"`
+	Mcc             string `json:"mcc"`
+	MccCategory     string `json:"mccCategory"`
+	MerchantCity    string `json:"merchantCity"`
+	MerchantCountry string `json:"merchantCountry"`
+	MerchantState   string `json:"merchantState"`
+	MerchantZipcode string `json:"merchantZipcode"`
+	MerchantMid     string `json:"merchantMid"`
+
+	TransactionTime     string `json:"transactionTime"`
+	TransactionCurrency string `json:"transactionCurrency"`
+	TransactionAmount   string `json:"transactionAmount"`
+	CreateTime          string `json:"createTime"`
+	Remark              string `json:"remark"`
+	Detail              string `json:"detail"`
+}
+
+type InterlaceCardTransferInReq struct {
+	AccountId           string `json:"accountId"`           // 账户 UUID
+	CardId              string `json:"cardId"`              // 卡 UUID
+	ClientTransactionId string `json:"clientTransactionId"` // 自定义交易 ID
+	Amount              string `json:"amount"`              // 划转金额（字符串）
+}
+
+// 外层响应
+type InterlaceCardTransferInResp struct {
+	Code    string                    `json:"code"`
+	Message string                    `json:"message"`
+	Data    InterlaceCardTransferData `json:"data"`
+}
+
+// InterlaceCardTransferIn 预付卡划转入（从 Quantum 账户到卡）
+func InterlaceCardTransferIn(ctx context.Context, in *InterlaceCardTransferInReq) (*InterlaceCardTransferData, error) {
+	if in == nil {
+		return nil, fmt.Errorf("transfer in req is nil")
+	}
+	if in.AccountId == "" {
+		return nil, fmt.Errorf("accountId is required")
+	}
+	if in.CardId == "" {
+		return nil, fmt.Errorf("cardId is required")
+	}
+	if in.ClientTransactionId == "" {
+		return nil, fmt.Errorf("clientTransactionId is required")
+	}
+	if in.Amount == "" {
+		return nil, fmt.Errorf("amount is required")
+	}
+
+	accessToken, err := GetInterlaceAccessToken(ctx)
+	if err != nil || accessToken == "" {
+		fmt.Println("获取access token错误")
+		return nil, err
+	}
+
+	// interlaceBaseURL 建议: https://api-sandbox.interlace.money/open-api/v3
+	base := interlaceBaseURL + "/cards/transfer-in"
+
+	bodyBytes, err := json.Marshal(in)
+	if err != nil {
+		return nil, fmt.Errorf("marshal transfer in body: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-access-token", accessToken)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("transfer-in resp:", string(respBody))
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("interlace transfer in http %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	var outer InterlaceCardTransferInResp
+	if err := json.Unmarshal(respBody, &outer); err != nil {
+		return nil, fmt.Errorf("transfer in unmarshal: %w", err)
+	}
+	if outer.Code != "000000" {
+		return nil, fmt.Errorf("transfer in failed: code=%s msg=%s", outer.Code, outer.Message)
+	}
+
+	return &outer.Data, nil
 }

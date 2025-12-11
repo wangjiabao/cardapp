@@ -656,7 +656,7 @@ func (u *UserRepo) CreateCardRecommend(ctx context.Context, userId uint64, amoun
 }
 
 // AmountToCard .
-func (u *UserRepo) AmountToCard(ctx context.Context, userId uint64, amount float64) (uint64, error) {
+func (u *UserRepo) AmountToCard(ctx context.Context, userId uint64, amount float64, one uint64) (uint64, error) {
 	res := u.data.DB(ctx).Table("user").Where("id=?", userId).Where("amount>=?", amount).
 		Updates(map[string]interface{}{
 			"amount":     gorm.Expr("amount - ?", amount),
@@ -673,6 +673,7 @@ func (u *UserRepo) AmountToCard(ctx context.Context, userId uint64, amount float
 	reward.UserId = userId
 	reward.Amount = amount
 	reward.Reason = 14 // 给我分红的理由
+	reward.One = one
 	resInsert := u.data.DB(ctx).Table("reward").Create(&reward)
 	if resInsert.Error != nil || 0 >= resInsert.RowsAffected {
 		return 0, errors.New(500, "CREATE_LOCATION_ERROR", "信息创建失败")
@@ -682,7 +683,7 @@ func (u *UserRepo) AmountToCard(ctx context.Context, userId uint64, amount float
 }
 
 // AmountToCardReward .
-func (u *UserRepo) AmountToCardReward(ctx context.Context, userId uint64, amount float64, orderId string, rewardId uint64) error {
+func (u *UserRepo) AmountToCardReward(ctx context.Context, userId uint64, amount float64, orderId string, rewardId, one uint64) error {
 	res := u.data.DB(ctx).Table("reward").Where("id=?", rewardId).
 		Updates(map[string]interface{}{
 			"one":        1,
@@ -700,6 +701,7 @@ func (u *UserRepo) AmountToCardReward(ctx context.Context, userId uint64, amount
 	reward.Amount = amount
 	reward.Reason = 4 // 给我分红的理由
 	reward.Address = orderId
+	reward.One = one
 	resInsert := u.data.DB(ctx).Table("reward").Create(&reward)
 	if resInsert.Error != nil || 0 >= resInsert.RowsAffected {
 		return errors.New(500, "CREATE_LOCATION_ERROR", "信息创建失败")

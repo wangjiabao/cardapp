@@ -361,6 +361,8 @@ components:
                     type: string
                 amount:
                     type: string
+                toType:
+                    type: string
         AmountToReply:
             type: object
             properties:
