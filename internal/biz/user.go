@@ -2110,7 +2110,7 @@ func InterlaceGetCardPrivateAccessToken(ctx context.Context, accountId, cardId s
 
 	base := interlaceBaseURL + "/cards/" + cardId + "/private-info/access-token"
 
-	fmt.Println(base, accessToken)
+	//fmt.Println(base, accessToken)
 
 	q := url.Values{}
 	q.Set("accountId", accountId)
@@ -2135,7 +2135,7 @@ func InterlaceGetCardPrivateAccessToken(ctx context.Context, accountId, cardId s
 		return "", err
 	}
 
-	fmt.Println(string(body))
+	//fmt.Println(string(body))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", fmt.Errorf("interlace card private token http %d: %s", resp.StatusCode, string(body))
