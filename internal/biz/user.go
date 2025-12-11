@@ -56,6 +56,8 @@ type User struct {
 	CardTwo          uint64
 	CanVip           uint64
 	CardTwoNumber    string
+	IdCard           string
+	Gender           string
 }
 
 type UserRecommend struct {
@@ -1042,6 +1044,14 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 		return &pb.OpenCardReply{Status: "手机号国家代码错误"}, nil
 	}
 
+	if 1 > len(req.SendBody.Gender) || len(req.SendBody.Gender) > 40 {
+		return &pb.OpenCardReply{Status: "性别错误"}, nil
+	}
+
+	if 10 > len(req.SendBody.IdCard) || len(req.SendBody.IdCard) > 40 {
+		return &pb.OpenCardReply{Status: "身份证号码错误"}, nil
+	}
+
 	if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
 		err = uuc.repo.CreateCardTwo(ctx, userId, &User{
 			Amount:           cardAmount,
@@ -1056,6 +1066,8 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 			PostalCode:       req.SendBody.PostalCode,
 			State:            req.SendBody.State,
 			PhoneCountryCode: req.SendBody.PhoneCountryCode,
+			Gender:           req.SendBody.Gender,
+			IdCard:           req.SendBody.IdCard,
 		})
 		if nil != err {
 			return err

@@ -188,11 +188,13 @@ message OpenCardRequest {
 		string countryCode = 5; // 国家代码
 		string phoneCountryCode = 11; // 手机号国家代码，例如：86
 		string state = 13; // 美国或加拿大必须区县代码
+		string idCard = 14; // 身份证号码
 		string phone = 6; // 手机号
 		string city = 7; // 城市
 		string country = 8; // 国家
 		string street = 9; // 街道
 		string postalCode = 10; // 邮政编码
+		string gender = 15;
 	}
 
 	SendBody send_body = 1;

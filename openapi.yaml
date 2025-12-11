@@ -481,6 +481,8 @@ components:
                     type: string
                 state:
                     type: string
+                idCard:
+                    type: string
                 phone:
                     type: string
                 city:
@@ -490,6 +492,8 @@ components:
                 street:
                     type: string
                 postalCode:
+                    type: string
+                gender:
                     type: string
         OrderListReply:
             type: object

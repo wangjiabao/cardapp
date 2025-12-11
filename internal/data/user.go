@@ -65,6 +65,8 @@ type CardTwo struct {
 	CardId           string    `gorm:"type:varchar(100);not null;default:'no'"`
 	CreatedAt        time.Time `gorm:"type:datetime;not null"`
 	UpdatedAt        time.Time `gorm:"type:datetime;not null"`
+	IdCard           string    `gorm:"type:varchar(45);not null;default:'no'"`
+	Gender           string    `gorm:"type:varchar(45);not null;default:'no'"`
 }
 
 type CardRecord struct {
@@ -511,6 +513,8 @@ func (u *UserRepo) CreateCardTwo(ctx context.Context, userId uint64, user *biz.U
 	cardTwo.City = user.City
 	cardTwo.State = user.State
 	cardTwo.PhoneCountryCode = user.PhoneCountryCode
+	cardTwo.IdCard = user.IdCard
+	cardTwo.Gender = user.Gender
 
 	resInsertTwo := u.data.DB(ctx).Table("card_two").Create(&cardTwo)
 	if resInsertTwo.Error != nil || 0 >= resInsertTwo.RowsAffected {
