@@ -238,7 +238,7 @@ func (uuc *UserUseCase) GetUserById(userId uint64) (*pb.GetUserReply, error) {
 		Amount:           fmt.Sprintf("%.2f", user.Amount),
 		MyTotalAmount:    user.MyTotalAmount,
 		Vip:              user.Vip,
-		CardNum:          user.CardNumber,
+		CardNum:          "",
 		CardStatus:       cardStatus,
 		CardAmount:       cardAmount,
 		RecommendAddress: myUserRecommendAddress,
