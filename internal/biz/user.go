@@ -1186,15 +1186,24 @@ func (uuc *UserUseCase) LookCard(ctx context.Context, req *pb.LookCardRequest, u
 	}
 
 	if 1 == req.SendBody.CardType {
+		if "success" != user.CardOrderId {
+			return &pb.LookCardReply{Status: "未激活虚拟卡"}, nil
+		}
+
 		if 10 > len(user.CardTwoNumber) {
 			return &pb.LookCardReply{Status: "未激活虚拟卡"}, nil
 		}
+
 		accessToken, err = InterlaceGetCardPrivateAccessToken(ctx, interlaceAccountId, user.CardNumber)
 		if 0 >= len(accessToken) || nil != err {
 			fmt.Println(err)
 			return &pb.LookCardReply{Status: "查询错误"}, nil
 		}
 	} else if 2 == req.SendBody.CardType {
+		if 2 != user.CardTwo {
+			return &pb.LookCardReply{Status: "未激活实体卡"}, nil
+		}
+
 		if 10 > len(user.CardTwoNumber) {
 			return &pb.LookCardReply{Status: "未激活实体卡"}, nil
 		}
