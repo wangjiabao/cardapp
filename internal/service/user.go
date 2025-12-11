@@ -673,72 +673,72 @@ func (u *UserService) Withdraw(ctx context.Context, req *pb.WithdrawRequest) (*p
 
 func (u *UserService) LookCard(ctx context.Context, req *pb.LookCardRequest) (*pb.LookCardReply, error) {
 	// 在上下文 context 中取出 claims 对象
-	//var (
-	//	err    error
-	//	userId uint64
-	//)
-	//
-	//if claims, ok := jwt.FromContext(ctx); ok {
-	//	c := claims.(jwt2.MapClaims)
-	//	if c["UserId"] == nil {
-	//		return &pb.LookCardReply{
-	//			Status: "无效TOKEN",
-	//		}, nil
-	//	}
-	//
-	//	userId = uint64(c["UserId"].(float64))
-	//}
-	//
-	//var (
-	//	user *biz.User
-	//)
-	//user, err = u.uuc.GetUserDataById(userId)
-	//if nil != err {
-	//	return &pb.LookCardReply{
-	//		Status: "无效TOKEN",
-	//	}, nil
-	//}
-	//
-	//if 1 == user.IsDelete {
-	//	return &pb.LookCardReply{
-	//		Status: "用户已删除",
-	//	}, nil
-	//}
-	//
-	//var (
-	//	res             bool
-	//	addressFromSign string
-	//)
-	//if 10 >= len(req.SendBody.Sign) {
-	//	return &pb.LookCardReply{
-	//		Status: "签名错误",
-	//	}, nil
-	//}
-	//var (
-	//	contentStr string
-	//)
-	//
-	//contentStr, err = u.uuc.GetAddressNonce(ctx, user.Address)
-	//if nil != err {
-	//	return &pb.LookCardReply{
-	//		Status: "错误",
-	//	}, nil
-	//}
-	//if 0 >= len(contentStr) {
-	//	return &pb.LookCardReply{
-	//		Status: "错误nonce",
-	//	}, nil
-	//}
-	//content := []byte(contentStr)
-	//
-	//res, addressFromSign = verifySig(req.SendBody.Sign, content)
-	//if !res || addressFromSign != user.Address {
-	//	return &pb.LookCardReply{
-	//		Status: "签名错误",
-	//	}, nil
-	//}
+	var (
+		err    error
+		userId uint64
+	)
 
-	return u.uuc.LookCard(ctx, req, 15)
+	if claims, ok := jwt.FromContext(ctx); ok {
+		c := claims.(jwt2.MapClaims)
+		if c["UserId"] == nil {
+			return &pb.LookCardReply{
+				Status: "无效TOKEN",
+			}, nil
+		}
+
+		userId = uint64(c["UserId"].(float64))
+	}
+
+	var (
+		user *biz.User
+	)
+	user, err = u.uuc.GetUserDataById(userId)
+	if nil != err {
+		return &pb.LookCardReply{
+			Status: "无效TOKEN",
+		}, nil
+	}
+
+	if 1 == user.IsDelete {
+		return &pb.LookCardReply{
+			Status: "用户已删除",
+		}, nil
+	}
+
+	var (
+		res             bool
+		addressFromSign string
+	)
+	if 10 >= len(req.SendBody.Sign) {
+		return &pb.LookCardReply{
+			Status: "签名错误",
+		}, nil
+	}
+	var (
+		contentStr string
+	)
+
+	contentStr, err = u.uuc.GetAddressNonce(ctx, user.Address)
+	if nil != err {
+		return &pb.LookCardReply{
+			Status: "错误",
+		}, nil
+	}
+	if 0 >= len(contentStr) {
+		return &pb.LookCardReply{
+			Status: "错误nonce",
+		}, nil
+	}
+	content := []byte(contentStr)
+
+	res, addressFromSign = verifySig(req.SendBody.Sign, content)
+	if !res || addressFromSign != user.Address {
+		return &pb.LookCardReply{
+			Status: "签名错误",
+		}, nil
+	}
+
+	return u.uuc.LookCard(ctx, req, userId)
 }
 
 func addressCheck(addressParam string) (bool, error) {
