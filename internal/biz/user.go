@@ -1191,6 +1191,7 @@ func (uuc *UserUseCase) LookCard(ctx context.Context, req *pb.LookCardRequest, u
 		}
 		accessToken, err = InterlaceGetCardPrivateAccessToken(ctx, interlaceAccountId, user.CardNumber)
 		if 0 >= len(accessToken) || nil != err {
+			fmt.Println(err)
 			return &pb.LookCardReply{Status: "查询错误"}, nil
 		}
 	} else if 2 == req.SendBody.CardType {
@@ -1199,6 +1200,7 @@ func (uuc *UserUseCase) LookCard(ctx context.Context, req *pb.LookCardRequest, u
 		}
 		accessToken, err = InterlaceGetCardPrivateAccessToken(ctx, interlaceAccountId, user.CardTwoNumber)
 		if 0 >= len(accessToken) || nil != err {
+			fmt.Println(err)
 			return &pb.LookCardReply{Status: "查询错误"}, nil
 		}
 	} else {
