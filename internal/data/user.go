@@ -61,6 +61,8 @@ type CardTwo struct {
 	BirthDate        string    `gorm:"type:varchar(45);not null;default:'no'"`
 	PhoneCountryCode string    `gorm:"type:varchar(45);not null;default:'no'"`
 	State            string    `gorm:"type:varchar(45);not null;default:'no'"`
+	Status           uint64    `gorm:"type:int"`
+	CardId           string    `gorm:"type:varchar(100);not null;default:'no'"`
 	CreatedAt        time.Time `gorm:"type:datetime;not null"`
 	UpdatedAt        time.Time `gorm:"type:datetime;not null"`
 }
