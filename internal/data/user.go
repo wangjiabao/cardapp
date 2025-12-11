@@ -196,7 +196,7 @@ func (u *UserRepo) GetUserByAddress(address string) (*biz.User, error) {
 	}
 
 	return &biz.User{
-		CardAmount:    user.CardAmount,
+		CardAmount:    0,
 		MyTotalAmount: user.MyTotalAmount,
 		AmountTwo:     user.AmountTwo,
 		IsDelete:      user.IsDelete,
