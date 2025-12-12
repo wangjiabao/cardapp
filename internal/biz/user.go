@@ -453,6 +453,7 @@ func (uuc *UserUseCase) OrderList(ctx context.Context, req *pb.OrderListRequest,
 			}
 		}
 	} else {
+		fmt.Println("aaaaa")
 		if 10 > len(user.CardNumber) {
 			return &pb.OrderListReply{Status: "ok", Count: 0,
 				List: res,
@@ -473,6 +474,7 @@ func (uuc *UserUseCase) OrderList(ctx context.Context, req *pb.OrderListRequest,
 			}, nil
 		}
 
+		fmt.Println(total)
 		total = totalTmp
 		if nil != txs {
 			for _, v := range txs {
@@ -2657,7 +2659,7 @@ func InterlaceListTransactions(ctx context.Context, in *InterlaceTxnListReq) ([]
 		return nil, 0, err
 	}
 
-	// fmt.Println("txn-list resp:", string(body))
+	fmt.Println("txn-list resp:", string(body))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, 0, fmt.Errorf("interlace txn list http %d: %s", resp.StatusCode, string(body))
