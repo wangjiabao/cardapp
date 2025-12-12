@@ -393,7 +393,7 @@ func (uuc *UserUseCase) OrderList(ctx context.Context, req *pb.OrderListRequest,
 	var (
 		user  *User
 		err   error
-		total int64
+		total uint64
 	)
 
 	user, err = uuc.repo.GetUserById(userId)
@@ -424,7 +424,8 @@ func (uuc *UserUseCase) OrderList(ctx context.Context, req *pb.OrderListRequest,
 			}, nil
 		}
 
-		total = totalTmp
+		total, _ = strconv.ParseUint(totalTmp, 10, 64)
+
 		if nil != txs {
 			for _, v := range txs {
 				tmpStatus := "SUCCESS"
@@ -453,7 +454,6 @@ func (uuc *UserUseCase) OrderList(ctx context.Context, req *pb.OrderListRequest,
 			}
 		}
 	} else {
-		fmt.Println("aaaaa")
 		if 10 > len(user.CardNumber) {
 			return &pb.OrderListReply{Status: "ok", Count: 0,
 				List: res,
@@ -474,8 +474,8 @@ func (uuc *UserUseCase) OrderList(ctx context.Context, req *pb.OrderListRequest,
 			}, nil
 		}
 
-		fmt.Println(total)
-		total = totalTmp
+		total, _ = strconv.ParseUint(totalTmp, 10, 64)
+
 		if nil != txs {
 			for _, v := range txs {
 				tmpStatus := "SUCCESS"
@@ -507,7 +507,7 @@ func (uuc *UserUseCase) OrderList(ctx context.Context, req *pb.OrderListRequest,
 
 	return &pb.OrderListReply{
 		Status: "ok",
-		Count:  uint64(total),
+		Count:  total,
 		List:   res,
 	}, nil
 }
@@ -2580,23 +2580,23 @@ type InterlaceTxnListResp struct {
 	Message string `json:"message"`
 	Data    struct {
 		List  []InterlaceTransaction `json:"list"`
-		Total int64                  `json:"total"`
+		Total string                 `json:"total"`
 	} `json:"data"`
 }
 
 // InterlaceListTransactions 拉交易流水
-func InterlaceListTransactions(ctx context.Context, in *InterlaceTxnListReq) ([]*InterlaceTransaction, int64, error) {
+func InterlaceListTransactions(ctx context.Context, in *InterlaceTxnListReq) ([]*InterlaceTransaction, string, error) {
 	if in == nil {
-		return nil, 0, fmt.Errorf("txn list req is nil")
+		return nil, "", fmt.Errorf("txn list req is nil")
 	}
 	if in.AccountId == "" {
-		return nil, 0, fmt.Errorf("accountId is required")
+		return nil, "", fmt.Errorf("accountId is required")
 	}
 
 	accessToken, err := GetInterlaceAccessToken(ctx)
 	if err != nil || accessToken == "" {
 		fmt.Println("获取access token错误")
-		return nil, 0, err
+		return nil, "", err
 	}
 
 	// interlaceBaseURL 建议: https://api-sandbox.interlace.money/open-api/v3
@@ -2642,7 +2642,7 @@ func InterlaceListTransactions(ctx context.Context, in *InterlaceTxnListReq) ([]
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlStr, nil)
 	if err != nil {
-		return nil, 0, err
+		return nil, "", err
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("x-access-token", accessToken)
@@ -2650,27 +2650,27 @@ func InterlaceListTransactions(ctx context.Context, in *InterlaceTxnListReq) ([]
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, 0, err
+		return nil, "", err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, 0, err
+		return nil, "", err
 	}
 
-	fmt.Println("txn-list resp:", string(body))
+	// fmt.Println("txn-list resp:", string(body))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, 0, fmt.Errorf("interlace txn list http %d: %s", resp.StatusCode, string(body))
+		return nil, "", fmt.Errorf("interlace txn list http %d: %s", resp.StatusCode, string(body))
 	}
 
 	var outer InterlaceTxnListResp
 	if err := json.Unmarshal(body, &outer); err != nil {
-		return nil, 0, fmt.Errorf("txn list unmarshal: %w", err)
+		return nil, "", fmt.Errorf("txn list unmarshal: %w", err)
 	}
 	if outer.Code != "000000" {
-		return nil, 0, fmt.Errorf("txn list failed: code=%s msg=%s", outer.Code, outer.Message)
+		return nil, "", fmt.Errorf("txn list failed: code=%s msg=%s", outer.Code, outer.Message)
 	}
 
 	res := make([]*InterlaceTransaction, 0, len(outer.Data.List))
