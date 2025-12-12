@@ -1227,20 +1227,6 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 		}
 
 		tmpOrderId := fmt.Sprintf("in-%d", time.Now().UnixNano())
-		// 划转
-		data, errTwo := InterlaceCardTransferIn(ctx, &InterlaceCardTransferInReq{
-			AccountId:           interlaceAccountId,
-			CardId:              user.CardTwoNumber,
-			ClientTransactionId: tmpOrderId,
-			Amount:              fmt.Sprintf("%.2f", float64(req.SendBody.Amount)), // 字符串
-		})
-		if errTwo != nil {
-			fmt.Println("InterlaceCardTransferIn error:", errTwo, data)
-			return &pb.AmountToCardReply{
-				Status: "划转错误，联系管理员，记录失败",
-			}, nil
-		}
-
 		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
 			err = uuc.repo.AmountToCardReward(ctx, userId, float64(req.SendBody.Amount), tmpOrderId, tmpRewardId, 1)
 			if nil != err {
@@ -1252,6 +1238,20 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 			fmt.Println(err, "划转写入mysql错误2", user)
 			return &pb.AmountToCardReply{
 				Status: "划转错误2，联系管理员",
+			}, nil
+		}
+
+		// 划转
+		data, errTwo := InterlaceCardTransferIn(ctx, &InterlaceCardTransferInReq{
+			AccountId:           interlaceAccountId,
+			CardId:              user.CardTwoNumber,
+			ClientTransactionId: tmpOrderId,
+			Amount:              fmt.Sprintf("%.2f", float64(req.SendBody.Amount)), // 字符串
+		})
+		if errTwo != nil {
+			fmt.Println("InterlaceCardTransferIn error:", errTwo, data)
+			return &pb.AmountToCardReply{
+				Status: "划转错误，联系管理员，记录失败",
 			}, nil
 		}
 
@@ -1286,20 +1286,6 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 		}
 
 		tmpOrderId := fmt.Sprintf("in-%d", time.Now().UnixNano())
-		// 划转
-		data, errTwo := InterlaceCardTransferIn(ctx, &InterlaceCardTransferInReq{
-			AccountId:           interlaceAccountId,
-			CardId:              user.CardNumber,
-			ClientTransactionId: tmpOrderId,
-			Amount:              fmt.Sprintf("%.2f", float64(req.SendBody.Amount)), // 字符串
-		})
-		if errTwo != nil {
-			fmt.Println("InterlaceCardTransferIn error:", errTwo, data)
-			return &pb.AmountToCardReply{
-				Status: "划转错误，联系管理员，记录失败",
-			}, nil
-		}
-
 		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
 			err = uuc.repo.AmountToCardReward(ctx, userId, float64(req.SendBody.Amount), tmpOrderId, tmpRewardId, 0)
 			if nil != err {
@@ -1311,6 +1297,20 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 			fmt.Println(err, "划转写入mysql错误2", user)
 			return &pb.AmountToCardReply{
 				Status: "划转错误2，联系管理员",
+			}, nil
+		}
+
+		// 划转
+		data, errTwo := InterlaceCardTransferIn(ctx, &InterlaceCardTransferInReq{
+			AccountId:           interlaceAccountId,
+			CardId:              user.CardNumber,
+			ClientTransactionId: tmpOrderId,
+			Amount:              fmt.Sprintf("%.2f", float64(req.SendBody.Amount)), // 字符串
+		})
+		if errTwo != nil {
+			fmt.Println("InterlaceCardTransferIn error:", errTwo, data)
+			return &pb.AmountToCardReply{
+				Status: "划转错误，联系管理员，记录失败",
 			}, nil
 		}
 	}
