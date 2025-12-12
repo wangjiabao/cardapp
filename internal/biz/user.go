@@ -1044,9 +1044,9 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 		return &pb.OpenCardReply{Status: "邮政编码错误"}, nil
 	}
 
-	if 1 > len(req.SendBody.PhoneCountryCode) || len(req.SendBody.PhoneCountryCode) > 99 {
-		return &pb.OpenCardReply{Status: "手机号国家代码错误"}, nil
-	}
+	//if 1 > len(req.SendBody.PhoneCountryCode) || len(req.SendBody.PhoneCountryCode) > 99 {
+	//	return &pb.OpenCardReply{Status: "手机号国家代码错误"}, nil
+	//}
 
 	if 1 > len(req.SendBody.Gender) || len(req.SendBody.Gender) > 40 {
 		return &pb.OpenCardReply{Status: "性别错误"}, nil
@@ -1069,7 +1069,7 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 			Street:           req.SendBody.Street,
 			PostalCode:       req.SendBody.PostalCode,
 			State:            req.SendBody.State,
-			PhoneCountryCode: req.SendBody.PhoneCountryCode,
+			PhoneCountryCode: "86",
 			Gender:           req.SendBody.Gender,
 			IdCard:           req.SendBody.IdCard,
 		})
@@ -1267,7 +1267,7 @@ func (uuc *UserUseCase) LookCard(ctx context.Context, req *pb.LookCardRequest, u
 			return &pb.LookCardReply{Status: "未激活虚拟卡"}, nil
 		}
 
-		if 10 > len(user.CardTwoNumber) {
+		if 10 > len(user.CardNumber) {
 			return &pb.LookCardReply{Status: "未激活虚拟卡"}, nil
 		}
 
