@@ -160,6 +160,7 @@ message GetUserReply {
 	uint64 canVip = 12;
 	uint64 vipThree = 13;
 	string cardTwo = 14;
+	string cardAmountTwo = 15;
 }
 
 message RecommendListRequest {
@@ -306,6 +307,7 @@ message RewardListReply {
 
 message OrderListRequest {
 	uint64 page = 1; // 页数
+	uint64 cardType = 2;
 }
 
 message OrderListReply {

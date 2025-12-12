@@ -151,7 +151,7 @@ func NewUserUseCase(repo UserRepo, tx Transaction, logger log.Logger) *UserUseCa
 	}
 }
 
-func (uuc *UserUseCase) GetUserById(userId uint64) (*pb.GetUserReply, error) {
+func (uuc *UserUseCase) GetUserById(ctx context.Context, userId uint64) (*pb.GetUserReply, error) {
 	var (
 		user                   *User
 		userRecommend          *UserRecommend
@@ -210,7 +210,8 @@ func (uuc *UserUseCase) GetUserById(userId uint64) (*pb.GetUserReply, error) {
 
 	cardStatus := uint64(0)
 	var (
-		cardAmount string
+		cardAmount    string
+		cardAmountTwo string
 	)
 	if "no" == user.CardOrderId {
 		cardStatus = 0
@@ -234,6 +235,26 @@ func (uuc *UserUseCase) GetUserById(userId uint64) (*pb.GetUserReply, error) {
 		}
 	}
 
+	if 10 < len(user.CardNumber) {
+		var (
+			res *InterlaceCardSummaryResp
+		)
+		res, _ = InterlaceGetCardSummary(ctx, interlaceAccountId, user.CardNumber)
+		if nil != res {
+			cardAmount = res.Data.Balance.Available
+		}
+	}
+
+	if 10 < len(user.CardTwoNumber) {
+		var (
+			res *InterlaceCardSummaryResp
+		)
+		res, _ = InterlaceGetCardSummary(ctx, interlaceAccountId, user.CardTwoNumber)
+		if nil != res {
+			cardAmountTwo = res.Data.Balance.Available
+		}
+	}
+
 	return &pb.GetUserReply{
 		Status:           "ok",
 		Address:          user.Address,
@@ -249,6 +270,7 @@ func (uuc *UserUseCase) GetUserById(userId uint64) (*pb.GetUserReply, error) {
 		CanVip:           user.CanVip,
 		VipThree:         user.VipThree,
 		CardTwo:          cardTwo,
+		CardAmountTwo:    cardAmountTwo,
 	}, nil
 }
 
@@ -369,9 +391,9 @@ func (uuc *UserUseCase) OrderList(ctx context.Context, req *pb.OrderListRequest,
 	res := make([]*pb.OrderListReply_List, 0)
 
 	var (
-		user   *User
-		err    error
-		cardId uint64
+		user  *User
+		err   error
+		total int64
 	)
 
 	user, err = uuc.repo.GetUserById(userId)
@@ -381,63 +403,109 @@ func (uuc *UserUseCase) OrderList(ctx context.Context, req *pb.OrderListRequest,
 		}, nil
 	}
 
-	if 5 > len(user.Card) {
-		return &pb.OrderListReply{Status: "ok", Count: 0,
-			List: res,
-		}, nil
-	}
+	if 1 == req.CardType {
+		if 10 > len(user.CardTwoNumber) {
+			return &pb.OrderListReply{Status: "ok", Count: 0,
+				List: res,
+			}, nil
+		}
 
-	if 5 > len(user.CardNumber) {
-		return &pb.OrderListReply{Status: "ok", Count: 0,
-			List: res,
-		}, nil
-	}
-
-	cardId, err = strconv.ParseUint(user.Card, 10, 64)
-	if err != nil {
-		return &pb.OrderListReply{Status: "查询错误", Count: 0,
-			List: res,
-		}, nil
-	}
-
-	return &pb.OrderListReply{Status: "ok", Count: 0,
-		List: res,
-	}, nil
-
-	var (
-		resGet *CardTransactionListResponse
-	)
-	resGet, err = GetCardTransactionList(cardId, req.Page, 20)
-	if nil == resGet || err != nil {
-		return &pb.OrderListReply{Status: "查询错误", Count: 0,
-			List: res,
-		}, nil
-	}
-
-	if 200 != resGet.Code || 0 >= resGet.Total {
-		return &pb.OrderListReply{
-			Status: "ok",
-			Count:  0,
-			List:   res,
-		}, nil
-	}
-
-	for _, v := range resGet.Rows {
-		res = append(res, &pb.OrderListReply_List{
-			Timestamp:               v.Timestamp,
-			Status:                  v.Status,
-			TradeAmount:             v.TradeAmount,
-			ActualTransactionAmount: v.ActualTransactionAmount,
-			ServiceFee:              v.ServiceFee,
-			TradeDescription:        v.TradeDescription,
-			CurrentBalance:          v.CurrentBalance,
-			TraderNum:               v.TradeNo,
+		txs, totalTmp, errTwo := InterlaceListTransactions(ctx, &InterlaceTxnListReq{
+			AccountId: interlaceAccountId,
+			CardId:    user.CardTwoNumber,
+			Limit:     20,
+			Page:      int(req.Page),
+			// StartTime: "1735689600000",
+			// EndTime:   "1738272000000",
 		})
+		if errTwo != nil {
+			return &pb.OrderListReply{Status: "ok", Count: 0,
+				List: res,
+			}, nil
+		}
+
+		total = totalTmp
+		if nil != txs {
+			for _, v := range txs {
+				tmpStatus := "SUCCESS"
+				if "CLOSED" == v.Status {
+
+				} else if "FAIL" == v.Status {
+					tmpStatus = "FAILED"
+				} else if "PENDING" == v.Status {
+					tmpStatus = "PROCESSING"
+				}
+
+				if 3 == v.Type {
+					continue
+				}
+
+				res = append(res, &pb.OrderListReply_List{
+					Timestamp:               v.CreateTime,
+					Status:                  tmpStatus,
+					TradeAmount:             v.Amount,
+					ActualTransactionAmount: v.TransactionAmount,
+					ServiceFee:              v.Fee,
+					TradeDescription:        v.TransactionAmount,
+					CurrentBalance:          "暂未获取",
+					TraderNum:               v.Detail,
+				})
+			}
+		}
+	} else {
+		if 10 > len(user.CardNumber) {
+			return &pb.OrderListReply{Status: "ok", Count: 0,
+				List: res,
+			}, nil
+		}
+
+		txs, totalTmp, errTwo := InterlaceListTransactions(ctx, &InterlaceTxnListReq{
+			AccountId: interlaceAccountId,
+			CardId:    user.CardNumber,
+			Limit:     20,
+			Page:      int(req.Page),
+			// StartTime: "1735689600000",
+			// EndTime:   "1738272000000",
+		})
+		if errTwo != nil {
+			return &pb.OrderListReply{Status: "ok", Count: 0,
+				List: res,
+			}, nil
+		}
+
+		total = totalTmp
+		if nil != txs {
+			for _, v := range txs {
+				tmpStatus := "SUCCESS"
+				if "CLOSED" == v.Status {
+
+				} else if "FAIL" == v.Status {
+					tmpStatus = "FAILED"
+				} else if "PENDING" == v.Status {
+					tmpStatus = "PROCESSING"
+				}
+
+				if 3 == v.Type {
+					continue
+				}
+
+				res = append(res, &pb.OrderListReply_List{
+					Timestamp:               v.CreateTime,
+					Status:                  tmpStatus,
+					TradeAmount:             v.Amount,
+					ActualTransactionAmount: v.TransactionAmount,
+					ServiceFee:              v.Fee,
+					TradeDescription:        v.TransactionAmount,
+					CurrentBalance:          "暂未获取",
+					TraderNum:               v.Detail,
+				})
+			}
+		}
 	}
 
 	return &pb.OrderListReply{
 		Status: "ok",
-		Count:  resGet.Total,
+		Count:  uint64(total),
 		List:   res,
 	}, nil
 }
@@ -2358,4 +2426,256 @@ func InterlaceCardTransferIn(ctx context.Context, in *InterlaceCardTransferInReq
 	}
 
 	return &outer.Data, nil
+}
+
+// /cards/{id}/card-summary 返回体
+type InterlaceCardSummaryResp struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		CardId    string `json:"cardId"`
+		AccountId string `json:"accountId"`
+
+		Balance struct {
+			ID        string `json:"id"`
+			Available string `json:"available"`
+			Currency  string `json:"currency"`
+		} `json:"balance"`
+
+		Statistics struct {
+			Consumption    string `json:"consumption"`
+			Reversal       string `json:"reversal"`
+			ReversalFee    string `json:"reversalFee"`
+			Refund         string `json:"refund"`
+			RefundFee      string `json:"refundFee"`
+			NetConsumption string `json:"netConsumption"`
+			Currency       string `json:"currency"`
+		} `json:"statistics"`
+
+		VelocityControl struct {
+			Type      string `json:"type"` // DAY/WEEK/MONTH/.../NA
+			Limit     string `json:"limit"`
+			Available string `json:"available"`
+		} `json:"velocityControl"`
+	} `json:"data"`
+}
+
+// InterlaceGetCardSummary 获取卡片 summary（余额/统计/限额）
+func InterlaceGetCardSummary(ctx context.Context, accountId, cardId string) (*InterlaceCardSummaryResp, error) {
+	if accountId == "" {
+		return nil, fmt.Errorf("accountId is required")
+	}
+	if cardId == "" {
+		return nil, fmt.Errorf("cardId is required")
+	}
+
+	accessToken, err := GetInterlaceAccessToken(ctx)
+	if err != nil || accessToken == "" {
+		fmt.Println("获取access token错误")
+		return nil, err
+	}
+
+	// interlaceBaseURL 建议: https://api-sandbox.interlace.money/open-api/v3
+	base := interlaceBaseURL + "/cards/" + cardId + "/card-summary"
+
+	q := url.Values{}
+	q.Set("accountId", accountId)
+	urlStr := base + "?" + q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlStr, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("x-access-token", accessToken)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// 方便你调试
+	// fmt.Println("card-summary resp:", string(body))
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("interlace card summary http %d: %s", resp.StatusCode, string(body))
+	}
+
+	var outer InterlaceCardSummaryResp
+	if err := json.Unmarshal(body, &outer); err != nil {
+		return nil, fmt.Errorf("card summary unmarshal: %w", err)
+	}
+	if outer.Code != "000000" {
+		return nil, fmt.Errorf("card summary failed: code=%s msg=%s", outer.Code, outer.Message)
+	}
+
+	return &outer, nil
+}
+
+type InterlaceTxnListReq struct {
+	AccountId string // 必填
+
+	ID                  string // transaction id
+	ClientTransactionId string
+	CardId              string
+	Type                string // "0".."14"
+	Status              string // CLOSED/PENDING/FAIL
+
+	StartTime string // timestamp（按文档写 string，直接透传）
+	EndTime   string // timestamp
+
+	Limit int // 1-100 默认 10
+	Page  int // >=1 默认 1
+}
+
+type InterlaceTransaction struct {
+	ID                string `json:"id"`
+	AccountId         string `json:"accountId"`
+	CardId            string `json:"cardId"`
+	CardholderId      string `json:"cardholderId"`
+	CardTransactionId string `json:"cardTransactionId"`
+
+	Currency string `json:"currency"`
+	Amount   string `json:"amount"`
+	Fee      string `json:"fee"`
+
+	FeeDetails []InterlaceFeeDetail `json:"feeDetails"`
+
+	ClientTransactionId      string `json:"clientTransactionId"`
+	RelatedCardTransactionId string `json:"relatedCardTransactionId"`
+	TransactionDisplayId     string `json:"transactionDisplayId"`
+
+	Type   int32  `json:"type"`
+	Status string `json:"status"`
+
+	MerchantName    string `json:"merchantName"`
+	Mcc             string `json:"mcc"`
+	MccCategory     string `json:"mccCategory"`
+	MerchantCity    string `json:"merchantCity"`
+	MerchantCountry string `json:"merchantCountry"`
+	MerchantState   string `json:"merchantState"`
+	MerchantZipcode string `json:"merchantZipcode"`
+	MerchantMid     string `json:"merchantMid"`
+
+	TransactionTime     string `json:"transactionTime"`
+	TransactionCurrency string `json:"transactionCurrency"`
+	TransactionAmount   string `json:"transactionAmount"`
+	CreateTime          string `json:"createTime"`
+
+	Remark string `json:"remark"`
+	Detail string `json:"detail"`
+}
+
+type InterlaceTxnListResp struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		List  []InterlaceTransaction `json:"list"`
+		Total int64                  `json:"total"`
+	} `json:"data"`
+}
+
+// InterlaceListTransactions 拉交易流水
+func InterlaceListTransactions(ctx context.Context, in *InterlaceTxnListReq) ([]*InterlaceTransaction, int64, error) {
+	if in == nil {
+		return nil, 0, fmt.Errorf("txn list req is nil")
+	}
+	if in.AccountId == "" {
+		return nil, 0, fmt.Errorf("accountId is required")
+	}
+
+	accessToken, err := GetInterlaceAccessToken(ctx)
+	if err != nil || accessToken == "" {
+		fmt.Println("获取access token错误")
+		return nil, 0, err
+	}
+
+	// interlaceBaseURL 建议: https://api-sandbox.interlace.money/open-api/v3
+	base := interlaceBaseURL + "/cards/transaction-list"
+
+	q := url.Values{}
+	q.Set("accountId", in.AccountId)
+
+	if in.ID != "" {
+		q.Set("id", in.ID)
+	}
+	if in.ClientTransactionId != "" {
+		q.Set("clientTransactionId", in.ClientTransactionId)
+	}
+	if in.CardId != "" {
+		q.Set("cardId", in.CardId)
+	}
+	if in.Type != "" {
+		q.Set("type", in.Type)
+	}
+	if in.Status != "" {
+		q.Set("status", in.Status)
+	}
+	if in.StartTime != "" {
+		q.Set("startTime", in.StartTime)
+	}
+	if in.EndTime != "" {
+		q.Set("endTime", in.EndTime)
+	}
+
+	limit := in.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	page := in.Page
+	if page <= 0 {
+		page = 1
+	}
+	q.Set("limit", fmt.Sprintf("%d", limit))
+	q.Set("page", fmt.Sprintf("%d", page))
+
+	urlStr := base + "?" + q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlStr, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("x-access-token", accessToken)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// fmt.Println("txn-list resp:", string(body))
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, 0, fmt.Errorf("interlace txn list http %d: %s", resp.StatusCode, string(body))
+	}
+
+	var outer InterlaceTxnListResp
+	if err := json.Unmarshal(body, &outer); err != nil {
+		return nil, 0, fmt.Errorf("txn list unmarshal: %w", err)
+	}
+	if outer.Code != "000000" {
+		return nil, 0, fmt.Errorf("txn list failed: code=%s msg=%s", outer.Code, outer.Message)
+	}
+
+	res := make([]*InterlaceTransaction, 0, len(outer.Data.List))
+	for i := range outer.Data.List {
+		t := outer.Data.List[i]
+		res = append(res, &t)
+	}
+
+	return res, outer.Data.Total, nil
 }

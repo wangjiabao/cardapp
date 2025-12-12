@@ -51,7 +51,7 @@ func (u *UserService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 		userId = uint64(c["UserId"].(float64))
 	}
 
-	return u.uuc.GetUserById(userId)
+	return u.uuc.GetUserById(ctx, userId)
 }
 
 func (u *UserService) UserRecommend(ctx context.Context, req *pb.RecommendListRequest) (*pb.RecommendListReply, error) {
