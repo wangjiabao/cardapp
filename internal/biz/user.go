@@ -1196,7 +1196,7 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 
 		tmpRewardId := uint64(0)
 		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
-			tmpRewardId, err = uuc.repo.AmountToCard(ctx, userId, float64(req.SendBody.Amount), 1)
+			tmpRewardId, err = uuc.repo.AmountToCard(ctx, userId, float64(req.SendBody.Amount), 0)
 			if nil != err {
 				return err
 			}
