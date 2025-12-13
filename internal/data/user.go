@@ -3,6 +3,7 @@ package data
 import (
 	"cardbinance/internal/biz"
 	"context"
+	"fmt"
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-redis/redis/v8"
@@ -690,6 +691,7 @@ func (u *UserRepo) AmountToCardReward(ctx context.Context, userId uint64, amount
 			"updated_at": time.Now().Format("2006-01-02 15:04:05"),
 		})
 	if res.Error != nil || 0 >= res.RowsAffected {
+		fmt.Println(res.RowsAffected, res.Error)
 		return errors.New(500, "UPDATE_REWARD_ERROR", "划转信息修改失败")
 	}
 

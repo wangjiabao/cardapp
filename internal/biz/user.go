@@ -824,12 +824,7 @@ func (uuc *UserUseCase) SetVip(ctx context.Context, req *pb.SetVipRequest, userI
 	}, nil
 }
 
-var lockAmount sync.Mutex
-
 func (uuc *UserUseCase) OpenCard(ctx context.Context, req *pb.OpenCardRequest, userId uint64) (*pb.OpenCardReply, error) {
-	lockAmount.Lock()
-	defer lockAmount.Unlock()
-
 	var (
 		user       *User
 		err        error
@@ -1043,9 +1038,6 @@ func (uuc *UserUseCase) OpenCard(ctx context.Context, req *pb.OpenCardRequest, u
 }
 
 func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest, userId uint64) (*pb.OpenCardReply, error) {
-	lockAmount.Lock()
-	defer lockAmount.Unlock()
-
 	var (
 		user *User
 		err  error
@@ -1161,9 +1153,6 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 }
 
 func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRequest, userId uint64) (*pb.AmountToCardReply, error) {
-	lockAmount.Lock()
-	defer lockAmount.Unlock()
-
 	var (
 		user             *User
 		err              error
@@ -1370,9 +1359,6 @@ func (uuc *UserUseCase) LookCard(ctx context.Context, req *pb.LookCardRequest, u
 }
 
 func (uuc *UserUseCase) AmountTo(ctx context.Context, req *pb.AmountToRequest, userId uint64) (*pb.AmountToReply, error) {
-	lockAmount.Lock()
-	defer lockAmount.Unlock()
-
 	var (
 		user   *User
 		toUser *User
@@ -1416,9 +1402,6 @@ func (uuc *UserUseCase) AmountTo(ctx context.Context, req *pb.AmountToRequest, u
 }
 
 func (uuc *UserUseCase) Withdraw(ctx context.Context, req *pb.WithdrawRequest, userId uint64) (*pb.WithdrawReply, error) {
-	lockAmount.Lock()
-	defer lockAmount.Unlock()
-
 	var (
 		user         *User
 		err          error
