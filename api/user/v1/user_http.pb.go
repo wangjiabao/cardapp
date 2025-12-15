@@ -25,6 +25,8 @@ const OperationUserCreateNonce = "/api.user.v1.User/CreateNonce"
 const OperationUserEthAuthorize = "/api.user.v1.User/EthAuthorize"
 const OperationUserGetUser = "/api.user.v1.User/GetUser"
 const OperationUserLookCard = "/api.user.v1.User/LookCard"
+const OperationUserLookCardNew = "/api.user.v1.User/LookCardNew"
+const OperationUserLookCardNewTwo = "/api.user.v1.User/LookCardNewTwo"
 const OperationUserOpenCard = "/api.user.v1.User/OpenCard"
 const OperationUserOpenCardTwo = "/api.user.v1.User/OpenCardTwo"
 const OperationUserOrderList = "/api.user.v1.User/OrderList"
@@ -45,6 +47,10 @@ type UserHTTPServer interface {
 	GetUser(context.Context, *GetUserRequest) (*GetUserReply, error)
 	// LookCard 开卡
 	LookCard(context.Context, *LookCardRequest) (*LookCardReply, error)
+	// LookCardNew 冻结卡
+	LookCardNew(context.Context, *LookCardRequest) (*LookCardReply, error)
+	// LookCardNewTwo 补卡
+	LookCardNewTwo(context.Context, *LookCardRequest) (*LookCardReply, error)
 	// OpenCard 开卡
 	OpenCard(context.Context, *OpenCardRequest) (*OpenCardReply, error)
 	OpenCardTwo(context.Context, *OpenCardRequest) (*OpenCardReply, error)
@@ -74,6 +80,8 @@ func RegisterUserHTTPServer(s *http.Server, srv UserHTTPServer) {
 	r.POST("/api/app_server/open_card", _User_OpenCard0_HTTP_Handler(srv))
 	r.POST("/api/app_server/open_card_two", _User_OpenCardTwo0_HTTP_Handler(srv))
 	r.POST("/api/app_server/look_card", _User_LookCard0_HTTP_Handler(srv))
+	r.POST("/api/app_server/look_card_new", _User_LookCardNew0_HTTP_Handler(srv))
+	r.POST("/api/app_server/change_card", _User_LookCardNewTwo0_HTTP_Handler(srv))
 	r.POST("/api/app_server/amount_to_card", _User_AmountToCard0_HTTP_Handler(srv))
 	r.POST("/api/app_server/set_vip", _User_SetVip0_HTTP_Handler(srv))
 	r.POST("/api/app_server/amount_to", _User_AmountTo0_HTTP_Handler(srv))
@@ -285,6 +293,50 @@ func _User_LookCard0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) err
 	}
 }
 
+func _User_LookCardNew0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in LookCardRequest
+		if err := ctx.Bind(&in.SendBody); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserLookCardNew)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.LookCardNew(ctx, req.(*LookCardRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*LookCardReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _User_LookCardNewTwo0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in LookCardRequest
+		if err := ctx.Bind(&in.SendBody); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserLookCardNewTwo)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.LookCardNewTwo(ctx, req.(*LookCardRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*LookCardReply)
+		return ctx.Result(200, reply)
+	}
+}
+
 func _User_AmountToCard0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in AmountToCardRequest
@@ -380,6 +432,8 @@ type UserHTTPClient interface {
 	EthAuthorize(ctx context.Context, req *EthAuthorizeRequest, opts ...http.CallOption) (rsp *EthAuthorizeReply, err error)
 	GetUser(ctx context.Context, req *GetUserRequest, opts ...http.CallOption) (rsp *GetUserReply, err error)
 	LookCard(ctx context.Context, req *LookCardRequest, opts ...http.CallOption) (rsp *LookCardReply, err error)
+	LookCardNew(ctx context.Context, req *LookCardRequest, opts ...http.CallOption) (rsp *LookCardReply, err error)
+	LookCardNewTwo(ctx context.Context, req *LookCardRequest, opts ...http.CallOption) (rsp *LookCardReply, err error)
 	OpenCard(ctx context.Context, req *OpenCardRequest, opts ...http.CallOption) (rsp *OpenCardReply, err error)
 	OpenCardTwo(ctx context.Context, req *OpenCardRequest, opts ...http.CallOption) (rsp *OpenCardReply, err error)
 	OrderList(ctx context.Context, req *OrderListRequest, opts ...http.CallOption) (rsp *OrderListReply, err error)
@@ -468,6 +522,32 @@ func (c *UserHTTPClientImpl) LookCard(ctx context.Context, in *LookCardRequest, 
 	pattern := "/api/app_server/look_card"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationUserLookCard))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in.SendBody, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *UserHTTPClientImpl) LookCardNew(ctx context.Context, in *LookCardRequest, opts ...http.CallOption) (*LookCardReply, error) {
+	var out LookCardReply
+	pattern := "/api/app_server/look_card_new"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserLookCardNew))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in.SendBody, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *UserHTTPClientImpl) LookCardNewTwo(ctx context.Context, in *LookCardRequest, opts ...http.CallOption) (*LookCardReply, error) {
+	var out LookCardReply
+	pattern := "/api/app_server/change_card"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserLookCardNewTwo))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in.SendBody, &out, opts...)
 	if err != nil {

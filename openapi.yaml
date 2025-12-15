@@ -56,6 +56,31 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /api/app_server/change_card:
+        post:
+            tags:
+                - User
+            description: 补卡
+            operationId: User_LookCardNewTwo
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LookCardRequest_SendBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LookCardReply'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /api/app_server/create_nonce:
         post:
             tags:
@@ -110,6 +135,31 @@ paths:
                 - User
             description: 开卡
             operationId: User_LookCard
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LookCardRequest_SendBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LookCardReply'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /api/app_server/look_card_new:
+        post:
+            tags:
+                - User
+            description: 冻结卡
+            operationId: User_LookCardNew
             requestBody:
                 content:
                     application/json:

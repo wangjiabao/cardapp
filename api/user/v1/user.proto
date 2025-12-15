@@ -81,6 +81,22 @@ service User {
 		};
 	};
 
+	// 冻结卡
+	rpc LookCardNew (LookCardRequest) returns (LookCardReply) {
+		option (google.api.http) = {
+			post: "/api/app_server/look_card_new"
+			body: "send_body"
+		};
+	};
+
+	// 补卡
+	rpc LookCardNewTwo (LookCardRequest) returns (LookCardReply) {
+		option (google.api.http) = {
+			post: "/api/app_server/change_card"
+			body: "send_body"
+		};
+	};
+
 	// 划转
 	rpc AmountToCard (AmountToCardRequest) returns (AmountToCardReply) {
 		option (google.api.http) = {

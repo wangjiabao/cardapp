@@ -19,20 +19,22 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	User_CreateNonce_FullMethodName   = "/api.user.v1.User/CreateNonce"
-	User_EthAuthorize_FullMethodName  = "/api.user.v1.User/EthAuthorize"
-	User_GetUser_FullMethodName       = "/api.user.v1.User/GetUser"
-	User_UserRecommend_FullMethodName = "/api.user.v1.User/UserRecommend"
-	User_OrderList_FullMethodName     = "/api.user.v1.User/OrderList"
-	User_RewardList_FullMethodName    = "/api.user.v1.User/RewardList"
-	User_RecordList_FullMethodName    = "/api.user.v1.User/RecordList"
-	User_OpenCard_FullMethodName      = "/api.user.v1.User/OpenCard"
-	User_OpenCardTwo_FullMethodName   = "/api.user.v1.User/OpenCardTwo"
-	User_LookCard_FullMethodName      = "/api.user.v1.User/LookCard"
-	User_AmountToCard_FullMethodName  = "/api.user.v1.User/AmountToCard"
-	User_SetVip_FullMethodName        = "/api.user.v1.User/SetVip"
-	User_AmountTo_FullMethodName      = "/api.user.v1.User/AmountTo"
-	User_Withdraw_FullMethodName      = "/api.user.v1.User/Withdraw"
+	User_CreateNonce_FullMethodName    = "/api.user.v1.User/CreateNonce"
+	User_EthAuthorize_FullMethodName   = "/api.user.v1.User/EthAuthorize"
+	User_GetUser_FullMethodName        = "/api.user.v1.User/GetUser"
+	User_UserRecommend_FullMethodName  = "/api.user.v1.User/UserRecommend"
+	User_OrderList_FullMethodName      = "/api.user.v1.User/OrderList"
+	User_RewardList_FullMethodName     = "/api.user.v1.User/RewardList"
+	User_RecordList_FullMethodName     = "/api.user.v1.User/RecordList"
+	User_OpenCard_FullMethodName       = "/api.user.v1.User/OpenCard"
+	User_OpenCardTwo_FullMethodName    = "/api.user.v1.User/OpenCardTwo"
+	User_LookCard_FullMethodName       = "/api.user.v1.User/LookCard"
+	User_LookCardNew_FullMethodName    = "/api.user.v1.User/LookCardNew"
+	User_LookCardNewTwo_FullMethodName = "/api.user.v1.User/LookCardNewTwo"
+	User_AmountToCard_FullMethodName   = "/api.user.v1.User/AmountToCard"
+	User_SetVip_FullMethodName         = "/api.user.v1.User/SetVip"
+	User_AmountTo_FullMethodName       = "/api.user.v1.User/AmountTo"
+	User_Withdraw_FullMethodName       = "/api.user.v1.User/Withdraw"
 )
 
 // UserClient is the client API for User service.
@@ -56,6 +58,10 @@ type UserClient interface {
 	OpenCardTwo(ctx context.Context, in *OpenCardRequest, opts ...grpc.CallOption) (*OpenCardReply, error)
 	// 开卡
 	LookCard(ctx context.Context, in *LookCardRequest, opts ...grpc.CallOption) (*LookCardReply, error)
+	// 冻结卡
+	LookCardNew(ctx context.Context, in *LookCardRequest, opts ...grpc.CallOption) (*LookCardReply, error)
+	// 补卡
+	LookCardNewTwo(ctx context.Context, in *LookCardRequest, opts ...grpc.CallOption) (*LookCardReply, error)
 	// 划转
 	AmountToCard(ctx context.Context, in *AmountToCardRequest, opts ...grpc.CallOption) (*AmountToCardReply, error)
 	// 设置级别给下级
@@ -164,6 +170,24 @@ func (c *userClient) LookCard(ctx context.Context, in *LookCardRequest, opts ...
 	return out, nil
 }
 
+func (c *userClient) LookCardNew(ctx context.Context, in *LookCardRequest, opts ...grpc.CallOption) (*LookCardReply, error) {
+	out := new(LookCardReply)
+	err := c.cc.Invoke(ctx, User_LookCardNew_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) LookCardNewTwo(ctx context.Context, in *LookCardRequest, opts ...grpc.CallOption) (*LookCardReply, error) {
+	out := new(LookCardReply)
+	err := c.cc.Invoke(ctx, User_LookCardNewTwo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userClient) AmountToCard(ctx context.Context, in *AmountToCardRequest, opts ...grpc.CallOption) (*AmountToCardReply, error) {
 	out := new(AmountToCardReply)
 	err := c.cc.Invoke(ctx, User_AmountToCard_FullMethodName, in, out, opts...)
@@ -221,6 +245,10 @@ type UserServer interface {
 	OpenCardTwo(context.Context, *OpenCardRequest) (*OpenCardReply, error)
 	// 开卡
 	LookCard(context.Context, *LookCardRequest) (*LookCardReply, error)
+	// 冻结卡
+	LookCardNew(context.Context, *LookCardRequest) (*LookCardReply, error)
+	// 补卡
+	LookCardNewTwo(context.Context, *LookCardRequest) (*LookCardReply, error)
 	// 划转
 	AmountToCard(context.Context, *AmountToCardRequest) (*AmountToCardReply, error)
 	// 设置级别给下级
@@ -265,6 +293,12 @@ func (UnimplementedUserServer) OpenCardTwo(context.Context, *OpenCardRequest) (*
 }
 func (UnimplementedUserServer) LookCard(context.Context, *LookCardRequest) (*LookCardReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LookCard not implemented")
+}
+func (UnimplementedUserServer) LookCardNew(context.Context, *LookCardRequest) (*LookCardReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LookCardNew not implemented")
+}
+func (UnimplementedUserServer) LookCardNewTwo(context.Context, *LookCardRequest) (*LookCardReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LookCardNewTwo not implemented")
 }
 func (UnimplementedUserServer) AmountToCard(context.Context, *AmountToCardRequest) (*AmountToCardReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AmountToCard not implemented")
@@ -471,6 +505,42 @@ func _User_LookCard_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_LookCardNew_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LookCardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).LookCardNew(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_LookCardNew_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).LookCardNew(ctx, req.(*LookCardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_LookCardNewTwo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LookCardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).LookCardNewTwo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_LookCardNewTwo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).LookCardNewTwo(ctx, req.(*LookCardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _User_AmountToCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AmountToCardRequest)
 	if err := dec(in); err != nil {
@@ -589,6 +659,14 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LookCard",
 			Handler:    _User_LookCard_Handler,
+		},
+		{
+			MethodName: "LookCardNew",
+			Handler:    _User_LookCardNew_Handler,
+		},
+		{
+			MethodName: "LookCardNewTwo",
+			Handler:    _User_LookCardNewTwo_Handler,
 		},
 		{
 			MethodName: "AmountToCard",

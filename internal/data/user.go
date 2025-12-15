@@ -45,6 +45,8 @@ type User struct {
 	CanVip        uint64    `gorm:"type:int"`
 	VipThree      uint64    `gorm:"type:int"`
 	CardTwoNumber string    `gorm:"type:varchar(100);not null;default:'no'"`
+	Pic           string    `gorm:"type:varchar(45);not null;default:'no'"`
+	PicTwo        string    `gorm:"type:varchar(45);not null;default:'no'"`
 }
 
 type CardTwo struct {
@@ -213,6 +215,8 @@ func (u *UserRepo) GetUserByAddress(address string) (*biz.User, error) {
 		CreatedAt:     user.CreatedAt,
 		UpdatedAt:     user.UpdatedAt,
 		VipTwo:        user.VipTwo,
+		Pic:           user.Pic,
+		PicTwo:        user.PicTwo,
 	}, nil
 }
 
@@ -473,6 +477,90 @@ func (u *UserRepo) CreateCard(ctx context.Context, userId uint64, user *biz.User
 	return nil
 }
 
+// UploadCardPic .
+func (u *UserRepo) UploadCardPic(ctx context.Context, userId uint64, pic string) error {
+	res := u.data.DB(ctx).Table("user").Where("id=?", userId).
+		Updates(map[string]interface{}{
+			"pic":        pic,
+			"updated_at": time.Now().Format("2006-01-02 15:04:05"),
+		})
+	if res.Error != nil || 0 >= res.RowsAffected {
+		return errors.New(500, "UPDATE_USER_ERROR", "用户信息修改失败")
+	}
+
+	return nil
+}
+
+// UploadCardOneLock .
+func (u *UserRepo) UploadCardOneLock(ctx context.Context, userId uint64) error {
+	res := u.data.DB(ctx).Table("user").Where("id=?", userId).
+		Updates(map[string]interface{}{
+			"lock_card":  1,
+			"updated_at": time.Now().Format("2006-01-02 15:04:05"),
+		})
+	if res.Error != nil || 0 >= res.RowsAffected {
+		return errors.New(500, "UPDATE_USER_ERROR", "用户信息修改失败")
+	}
+
+	return nil
+}
+
+// UploadCardTwoLock .
+func (u *UserRepo) UploadCardTwoLock(ctx context.Context, userId uint64) error {
+	res := u.data.DB(ctx).Table("user").Where("id=?", userId).
+		Updates(map[string]interface{}{
+			"lock_card_two": 1,
+			"updated_at":    time.Now().Format("2006-01-02 15:04:05"),
+		})
+	if res.Error != nil || 0 >= res.RowsAffected {
+		return errors.New(500, "UPDATE_USER_ERROR", "用户信息修改失败")
+	}
+
+	return nil
+}
+
+// UploadCardChange .
+func (u *UserRepo) UploadCardChange(ctx context.Context, userId uint64) error {
+	res := u.data.DB(ctx).Table("user").Where("id=?", userId).
+		Updates(map[string]interface{}{
+			"change_card": 1,
+			"updated_at":  time.Now().Format("2006-01-02 15:04:05"),
+		})
+	if res.Error != nil || 0 >= res.RowsAffected {
+		return errors.New(500, "UPDATE_USER_ERROR", "用户信息修改失败")
+	}
+
+	return nil
+}
+
+// UploadCardChangeTwo .
+func (u *UserRepo) UploadCardChangeTwo(ctx context.Context, userId uint64) error {
+	res := u.data.DB(ctx).Table("user").Where("id=?", userId).
+		Updates(map[string]interface{}{
+			"change_card_two": 1,
+			"updated_at":      time.Now().Format("2006-01-02 15:04:05"),
+		})
+	if res.Error != nil || 0 >= res.RowsAffected {
+		return errors.New(500, "UPDATE_USER_ERROR", "用户信息修改失败")
+	}
+
+	return nil
+}
+
+// UploadCardPicTwo .
+func (u *UserRepo) UploadCardPicTwo(ctx context.Context, userId uint64, pic string) error {
+	res := u.data.DB(ctx).Table("user").Where("id=?", userId).
+		Updates(map[string]interface{}{
+			"pic_two":    pic,
+			"updated_at": time.Now().Format("2006-01-02 15:04:05"),
+		})
+	if res.Error != nil || 0 >= res.RowsAffected {
+		return errors.New(500, "UPDATE_USER_ERROR", "用户信息修改失败")
+	}
+
+	return nil
+}
+
 // CreateCardTwo .
 func (u *UserRepo) CreateCardTwo(ctx context.Context, userId uint64, user *biz.User) error {
 	res := u.data.DB(ctx).Table("user").Where("id=?", userId).Where("amount>=?", user.Amount).Where("card_two=?", 0).
@@ -657,7 +745,7 @@ func (u *UserRepo) CreateCardRecommend(ctx context.Context, userId uint64, amoun
 }
 
 // AmountToCard .
-func (u *UserRepo) AmountToCard(ctx context.Context, userId uint64, amount float64, one uint64) (uint64, error) {
+func (u *UserRepo) AmountToCard(ctx context.Context, userId uint64, amount float64, amountRel float64, one uint64) (uint64, error) {
 	res := u.data.DB(ctx).Table("user").Where("id=?", userId).Where("amount>=?", amount).
 		Updates(map[string]interface{}{
 			"amount":     gorm.Expr("amount - ?", amount),

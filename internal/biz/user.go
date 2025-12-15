@@ -10,10 +10,12 @@ import (
 	"fmt"
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
+	transporthttp "github.com/go-kratos/kratos/v2/transport/http"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -58,6 +60,8 @@ type User struct {
 	CardTwoNumber    string
 	IdCard           string
 	Gender           string
+	Pic              string
+	PicTwo           string
 }
 
 type UserRecommend struct {
@@ -127,7 +131,7 @@ type UserRepo interface {
 	GetAllUsers() ([]*User, error)
 	UpdateCard(ctx context.Context, userId uint64, cardOrderId, card string) error
 	CreateCardRecommend(ctx context.Context, userId uint64, amount float64, vip uint64, address string) error
-	AmountToCard(ctx context.Context, userId uint64, amount float64, one uint64) (uint64, error)
+	AmountToCard(ctx context.Context, userId uint64, amount float64, amountRel float64, one uint64) (uint64, error)
 	AmountToCardReward(ctx context.Context, userId uint64, amount float64, orderId string, rewardId uint64, one uint64) error
 	AmountTo(ctx context.Context, userId, toUserId uint64, toAddress string, amount float64) error
 	Withdraw(ctx context.Context, userId uint64, amount, amountRel float64, address string) error
@@ -135,6 +139,12 @@ type UserRepo interface {
 	GetUserRecordByUserIdPage(ctx context.Context, b *Pagination, userId uint64) ([]*CardRecord, error, int64)
 	SetVip(ctx context.Context, userId uint64, vip uint64) error
 	GetUsersOpenCard() ([]*User, error)
+	UploadCardPicTwo(ctx context.Context, userId uint64, pic string) error
+	UploadCardPic(ctx context.Context, userId uint64, pic string) error
+	UploadCardChangeTwo(ctx context.Context, userId uint64) error
+	UploadCardChange(ctx context.Context, userId uint64) error
+	UploadCardOneLock(ctx context.Context, userId uint64) error
+	UploadCardTwoLock(ctx context.Context, userId uint64) error
 }
 
 type UserUseCase struct {
@@ -1163,6 +1173,21 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 		return &pb.AmountToCardReply{Status: "用户不存在"}, nil
 	}
 
+	var (
+		configs      []*Config
+		amountToRate float64
+	)
+
+	// 配置
+	configs, err = uuc.repo.GetConfigByKeys("amount_to_rate")
+	if nil != configs {
+		for _, vConfig := range configs {
+			if "amount_to_rate" == vConfig.KeyName {
+				amountToRate, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+		}
+	}
+
 	lockAmountToCard, err = uuc.repo.GetLockAmountToCardByAddress(ctx, user.Address)
 	if 0 < len(lockAmountToCard) {
 		return &pb.AmountToCardReply{Status: "每分钟划转1笔"}, nil
@@ -1185,6 +1210,11 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 		return &pb.AmountToCardReply{Status: "划转最少20u"}, nil
 	}
 
+	amountFloatSubFee := float64(req.SendBody.Amount) - float64(req.SendBody.Amount)*amountToRate
+	if 0 >= amountFloatSubFee {
+		return &pb.AmountToCardReply{Status: "手续费错误"}, nil
+	}
+
 	if 1 == req.SendBody.ToType {
 		if 2 != user.CardTwo {
 			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通实体卡"}, nil
@@ -1195,8 +1225,14 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 		}
 
 		tmpRewardId := uint64(0)
+		tmpOrderId := fmt.Sprintf("in-%d", time.Now().UnixNano())
 		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
-			tmpRewardId, err = uuc.repo.AmountToCard(ctx, userId, float64(req.SendBody.Amount), 0)
+			tmpRewardId, err = uuc.repo.AmountToCard(ctx, userId, float64(req.SendBody.Amount), amountFloatSubFee, 0)
+			if nil != err {
+				return err
+			}
+
+			err = uuc.repo.AmountToCardReward(ctx, userId, float64(req.SendBody.Amount), tmpOrderId, tmpRewardId, 1)
 			if nil != err {
 				return err
 			}
@@ -1209,33 +1245,12 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 			}, nil
 		}
 
-		if 0 >= tmpRewardId {
-			return &pb.AmountToCardReply{
-				Status: "划转错误，联系管理员，记录失败",
-			}, nil
-		}
-
-		tmpOrderId := fmt.Sprintf("in-%d", time.Now().UnixNano())
-		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
-			err = uuc.repo.AmountToCardReward(ctx, userId, float64(req.SendBody.Amount), tmpOrderId, tmpRewardId, 1)
-			if nil != err {
-				return err
-			}
-
-			return nil
-		}); nil != err {
-			fmt.Println(err, "划转写入mysql错误2", user)
-			return &pb.AmountToCardReply{
-				Status: "划转错误2，联系管理员",
-			}, nil
-		}
-
 		// 划转
 		data, errTwo := InterlaceCardTransferIn(ctx, &InterlaceCardTransferInReq{
 			AccountId:           interlaceAccountId,
 			CardId:              user.CardTwoNumber,
 			ClientTransactionId: tmpOrderId,
-			Amount:              fmt.Sprintf("%.2f", float64(req.SendBody.Amount)), // 字符串
+			Amount:              fmt.Sprintf("%.2f", amountFloatSubFee), // 字符串
 		})
 		if errTwo != nil {
 			fmt.Println("InterlaceCardTransferIn error:", errTwo, data)
@@ -1254,8 +1269,14 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 		}
 
 		tmpRewardId := uint64(0)
+		tmpOrderId := fmt.Sprintf("in-%d", time.Now().UnixNano())
 		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
-			tmpRewardId, err = uuc.repo.AmountToCard(ctx, userId, float64(req.SendBody.Amount), 0)
+			tmpRewardId, err = uuc.repo.AmountToCard(ctx, userId, float64(req.SendBody.Amount), amountFloatSubFee, 0)
+			if nil != err {
+				return err
+			}
+
+			err = uuc.repo.AmountToCardReward(ctx, userId, float64(req.SendBody.Amount), tmpOrderId, tmpRewardId, 0)
 			if nil != err {
 				return err
 			}
@@ -1268,33 +1289,12 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 			}, nil
 		}
 
-		if 0 >= tmpRewardId {
-			return &pb.AmountToCardReply{
-				Status: "划转错误，联系管理员，记录失败",
-			}, nil
-		}
-
-		tmpOrderId := fmt.Sprintf("in-%d", time.Now().UnixNano())
-		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
-			err = uuc.repo.AmountToCardReward(ctx, userId, float64(req.SendBody.Amount), tmpOrderId, tmpRewardId, 0)
-			if nil != err {
-				return err
-			}
-
-			return nil
-		}); nil != err {
-			fmt.Println(err, "划转写入mysql错误2", user)
-			return &pb.AmountToCardReply{
-				Status: "划转错误2，联系管理员",
-			}, nil
-		}
-
 		// 划转
 		data, errTwo := InterlaceCardTransferIn(ctx, &InterlaceCardTransferInReq{
 			AccountId:           interlaceAccountId,
 			CardId:              user.CardNumber,
 			ClientTransactionId: tmpOrderId,
-			Amount:              fmt.Sprintf("%.2f", float64(req.SendBody.Amount)), // 字符串
+			Amount:              fmt.Sprintf("%.2f", amountFloatSubFee), // 字符串
 		})
 		if errTwo != nil {
 			fmt.Println("InterlaceCardTransferIn error:", errTwo, data)
@@ -1307,6 +1307,72 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 	return &pb.AmountToCardReply{
 		Status: "ok",
 	}, nil
+}
+
+func (uuc *UserUseCase) LookCardNewTwo(ctx context.Context, req *pb.LookCardRequest, userId uint64) (*pb.LookCardReply, error) {
+	var (
+		user *User
+		err  error
+	)
+	user, err = uuc.repo.GetUserById(userId)
+	if nil == user || nil != err {
+		return &pb.LookCardReply{Status: "用户不存在"}, nil
+	}
+
+	if 1 == req.SendBody.CardType {
+		err = uuc.repo.UploadCardChange(ctx, user.ID)
+		if err != nil {
+			return &pb.LookCardReply{Status: "用户不存在"}, nil
+		}
+
+	} else {
+		err = uuc.repo.UploadCardChangeTwo(ctx, user.ID)
+		if err != nil {
+			return &pb.LookCardReply{Status: "用户不存在"}, nil
+		}
+	}
+
+	return &pb.LookCardReply{Status: "ok"}, nil
+}
+
+func (uuc *UserUseCase) LookCardNew(ctx context.Context, req *pb.LookCardRequest, userId uint64) (*pb.LookCardReply, error) {
+	var (
+		user *User
+		err  error
+	)
+	user, err = uuc.repo.GetUserById(userId)
+	if nil == user || nil != err {
+		return &pb.LookCardReply{Status: "用户不存在"}, nil
+	}
+
+	// 冻结
+	if 1 == req.SendBody.CardType {
+		err = uuc.repo.UploadCardOneLock(ctx, user.ID)
+		if err != nil {
+			return &pb.LookCardReply{Status: "用户不存在"}, nil
+		}
+
+		card, err := InterlaceFreezeCard(ctx, interlaceAccountId, user.CardNumber)
+		if err != nil {
+			fmt.Println("freeze error:", err)
+			return &pb.LookCardReply{Status: "冻结虚拟卡失败"}, nil
+		}
+		fmt.Println("freeze ok, status =", card.Status) // 期望 FROZEN
+	} else {
+		err = uuc.repo.UploadCardTwoLock(ctx, user.ID)
+		if err != nil {
+			return &pb.LookCardReply{Status: "用户不存在"}, nil
+		}
+
+		card, err := InterlaceFreezeCard(ctx, interlaceAccountId, user.CardTwoNumber)
+		if err != nil {
+			fmt.Println("freeze error:", err)
+			return &pb.LookCardReply{Status: "冻结实体卡失败"}, nil
+		}
+		fmt.Println("freeze ok, status =", card.Status) // 期望 FROZEN
+	}
+
+	return &pb.LookCardReply{Status: "ok"}, nil
 }
 
 func (uuc *UserUseCase) LookCard(ctx context.Context, req *pb.LookCardRequest, userId uint64) (*pb.LookCardReply, error) {
@@ -1449,6 +1515,70 @@ func (uuc *UserUseCase) Withdraw(ctx context.Context, req *pb.WithdrawRequest, u
 	return &pb.WithdrawReply{
 		Status: "ok",
 	}, nil
+}
+
+func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
+
+	name := ctx.Request().FormValue("address")
+	num := ctx.Request().FormValue("num")
+
+	var (
+		user *User
+	)
+	user, err = uuc.repo.GetUserByAddress(name)
+	if nil == user || nil != err {
+		return
+	}
+
+	file, _, err := ctx.Request().FormFile("file")
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	uS := strconv.FormatUint(user.ID, 10)
+	picName := uS + num + ".png"
+	if "one" == num {
+		if "no" != user.Pic {
+			err = uuc.repo.UploadCardPic(ctx, user.ID, picName)
+			if err != nil {
+				return err
+			}
+
+			// 修改文件名并创建保存图片
+			err = os.Remove("/www/wwwroot/www.royalpay.tv/images/" + picName)
+			if err != nil {
+				return
+			}
+		}
+	} else {
+		if "no" != user.PicTwo {
+			err = uuc.repo.UploadCardPicTwo(ctx, user.ID, picName)
+			if err != nil {
+				return err
+			}
+
+			// 修改文件名并创建保存图片
+			err = os.Remove("/www/wwwroot/www.royalpay.tv/images/" + picName)
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	imageFile, err := os.Create("/www/wwwroot/www.ispayplay.com/images/" + picName)
+	if err != nil {
+		return
+	}
+	defer imageFile.Close()
+
+	// 将文件内容复制到保存的文件中
+	_, err = io.Copy(imageFile, file)
+	if err != nil {
+		return
+	}
+
+	return nil
 }
 
 type CreateCardResponse struct {
@@ -2663,4 +2793,118 @@ func InterlaceListTransactions(ctx context.Context, in *InterlaceTxnListReq) ([]
 	}
 
 	return res, outer.Data.Total, nil
+}
+
+type InterlaceFreezeCardReq struct {
+	AccountId string `json:"accountId"`
+}
+
+type InterlaceFreezeCardResp struct {
+	Code    string        `json:"code"`
+	Message string        `json:"message"`
+	Data    InterlaceCard `json:"data"` // 你之前那个卡结构体，含 status 等字段
+}
+
+// 单张卡片信息（输出）
+type InterlaceCard struct {
+	ID        string `json:"id"`
+	AccountID string `json:"accountId"`
+	Status    string `json:"status"`   // INACTIVE, CONTROL, ACTIVE, PENDING, FROZEN
+	Currency  string `json:"currency"` // 货币代码
+	Bin       string `json:"bin"`
+
+	UserName     string `json:"userName"`
+	CreateTime   string `json:"createTime"`
+	CardLastFour string `json:"cardLastFour"`
+
+	BillingAddress *InterlaceBillingAddress `json:"billingAddress"`
+
+	Label        string `json:"label"`
+	BalanceID    string `json:"balanceId"`
+	BudgetID     string `json:"budgetId"`
+	CardholderID string `json:"cardholderId"`
+	ReferenceID  string `json:"referenceId"`
+
+	CardMode string `json:"cardMode"` // PHYSICAL_CARD / VIRTUAL_CARD
+
+	TransactionLimits []InterlaceTransactionLimit `json:"transactionLimits"`
+}
+
+// 账单地址
+type InterlaceBillingAddress struct {
+	AddressLine1 string `json:"addressLine1,omitempty"`
+	AddressLine2 string `json:"addressLine2,omitempty"`
+	City         string `json:"city,omitempty"`
+	State        string `json:"state,omitempty"`
+	PostalCode   string `json:"postalCode,omitempty"`
+	Country      string `json:"country,omitempty"`
+}
+
+// 单个额度限制
+type InterlaceTransactionLimit struct {
+	Type     string `json:"type"`     // DAY/WEEK/MONTH/QUARTER/YEAR/LIFETIME/TRANSACTION/NA
+	Value    string `json:"value"`    // 金额（字符串）
+	Currency string `json:"currency"` // 货币
+}
+
+// InterlaceFreezeCard 冻结卡片（返回卡详情，status 应该变成 FROZEN）
+func InterlaceFreezeCard(ctx context.Context, accountId, cardId string) (*InterlaceCard, error) {
+	if accountId == "" {
+		return nil, fmt.Errorf("accountId is required")
+	}
+	if cardId == "" {
+		return nil, fmt.Errorf("cardId is required")
+	}
+
+	accessToken, err := GetInterlaceAccessToken(ctx)
+	if err != nil || accessToken == "" {
+		fmt.Println("获取access token错误")
+		return nil, err
+	}
+
+	// interlaceBaseURL 建议为: https://api-sandbox.interlace.money/open-api/v3
+	urlStr := interlaceBaseURL + "/cards/" + cardId + "/freeze"
+
+	// body: { "accountId": "..." }
+	reqBody := &InterlaceFreezeCardReq{AccountId: accountId}
+	bs, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("freeze card marshal: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, urlStr, bytes.NewReader(bs))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-access-token", accessToken)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// fmt.Println("freeze resp:", string(body))
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("interlace freeze card http %d: %s", resp.StatusCode, string(body))
+	}
+
+	var outer InterlaceFreezeCardResp
+	if err := json.Unmarshal(body, &outer); err != nil {
+		return nil, fmt.Errorf("freeze card unmarshal: %w", err)
+	}
+	if outer.Code != "000000" {
+		return nil, fmt.Errorf("freeze card failed: code=%s msg=%s", outer.Code, outer.Message)
+	}
+
+	return &outer.Data, nil
 }

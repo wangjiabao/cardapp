@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/auth/jwt"
+	transporthttp "github.com/go-kratos/kratos/v2/transport/http"
 	jwt2 "github.com/golang-jwt/jwt/v5"
 	"regexp"
 	"strings"
@@ -704,6 +705,76 @@ func (u *UserService) LookCard(ctx context.Context, req *pb.LookCardRequest) (*p
 			Status: "用户已删除",
 		}, nil
 	}
+	//
+	//var (
+	//	res             bool
+	//	addressFromSign string
+	//)
+	//if 10 >= len(req.SendBody.Sign) {
+	//	return &pb.LookCardReply{
+	//		Status: "签名错误",
+	//	}, nil
+	//}
+	//var (
+	//	contentStr string
+	//)
+	//
+	//contentStr, err = u.uuc.GetAddressNonce(ctx, user.Address)
+	//if nil != err {
+	//	return &pb.LookCardReply{
+	//		Status: "错误",
+	//	}, nil
+	//}
+	//if 0 >= len(contentStr) {
+	//	return &pb.LookCardReply{
+	//		Status: "错误nonce",
+	//	}, nil
+	//}
+	//content := []byte(contentStr)
+	//
+	//res, addressFromSign = verifySig(req.SendBody.Sign, content)
+	//if !res || addressFromSign != user.Address {
+	//	return &pb.LookCardReply{
+	//		Status: "签名错误",
+	//	}, nil
+	//}
+
+	return u.uuc.LookCard(ctx, req, userId)
+}
+
+func (u *UserService) LookCardNew(ctx context.Context, req *pb.LookCardRequest) (*pb.LookCardReply, error) {
+	// 在上下文 context 中取出 claims 对象
+	var (
+		err    error
+		userId uint64
+	)
+
+	if claims, ok := jwt.FromContext(ctx); ok {
+		c := claims.(jwt2.MapClaims)
+		if c["UserId"] == nil {
+			return &pb.LookCardReply{
+				Status: "无效TOKEN",
+			}, nil
+		}
+
+		userId = uint64(c["UserId"].(float64))
+	}
+
+	var (
+		user *biz.User
+	)
+	user, err = u.uuc.GetUserDataById(userId)
+	if nil != err {
+		return &pb.LookCardReply{
+			Status: "无效TOKEN",
+		}, nil
+	}
+
+	if 1 == user.IsDelete {
+		return &pb.LookCardReply{
+			Status: "用户已删除",
+		}, nil
+	}
 
 	var (
 		res             bool
@@ -738,7 +809,109 @@ func (u *UserService) LookCard(ctx context.Context, req *pb.LookCardRequest) (*p
 		}, nil
 	}
 
-	return u.uuc.LookCard(ctx, req, userId)
+	return u.uuc.LookCardNew(ctx, req, userId)
+}
+
+func (u *UserService) LookCardNewTwo(ctx context.Context, req *pb.LookCardRequest) (*pb.LookCardReply, error) {
+	// 在上下文 context 中取出 claims 对象
+	var (
+		err    error
+		userId uint64
+	)
+
+	if claims, ok := jwt.FromContext(ctx); ok {
+		c := claims.(jwt2.MapClaims)
+		if c["UserId"] == nil {
+			return &pb.LookCardReply{
+				Status: "无效TOKEN",
+			}, nil
+		}
+
+		userId = uint64(c["UserId"].(float64))
+	}
+
+	var (
+		user *biz.User
+	)
+	user, err = u.uuc.GetUserDataById(userId)
+	if nil != err {
+		return &pb.LookCardReply{
+			Status: "无效TOKEN",
+		}, nil
+	}
+
+	if 1 == user.IsDelete {
+		return &pb.LookCardReply{
+			Status: "用户已删除",
+		}, nil
+	}
+
+	var (
+		res             bool
+		addressFromSign string
+	)
+	if 10 >= len(req.SendBody.Sign) {
+		return &pb.LookCardReply{
+			Status: "签名错误",
+		}, nil
+	}
+	var (
+		contentStr string
+	)
+
+	contentStr, err = u.uuc.GetAddressNonce(ctx, user.Address)
+	if nil != err {
+		return &pb.LookCardReply{
+			Status: "错误",
+		}, nil
+	}
+	if 0 >= len(contentStr) {
+		return &pb.LookCardReply{
+			Status: "错误nonce",
+		}, nil
+	}
+	content := []byte(contentStr)
+
+	res, addressFromSign = verifySig(req.SendBody.Sign, content)
+	if !res || addressFromSign != user.Address {
+		return &pb.LookCardReply{
+			Status: "签名错误",
+		}, nil
+	}
+
+	return u.uuc.LookCardNewTwo(ctx, req, userId)
+}
+
+// Upload upload .
+func (u *UserService) Upload(ctx transporthttp.Context) (err error) {
+	var (
+		res             bool
+		addressFromSign string
+	)
+	name := ctx.Request().FormValue("address")
+	sign := ctx.Request().FormValue("sign")
+	if 10 >= len(sign) {
+		return nil
+	}
+	var (
+		contentStr string
+	)
+
+	contentStr, err = u.uuc.GetAddressNonce(ctx, name)
+	if nil != err {
+		return nil
+	}
+	if 0 >= len(contentStr) {
+		return nil
+	}
+	content := []byte(contentStr)
+
+	res, addressFromSign = verifySig(sign, content)
+	if !res || addressFromSign != sign {
+		return nil
+	}
+
+	return u.uuc.Upload(ctx)
 }
 
 func addressCheck(addressParam string) (bool, error) {
