@@ -21,6 +21,7 @@ const _ = http.SupportPackageIsVersion1
 
 const OperationUserAmountTo = "/api.user.v1.User/AmountTo"
 const OperationUserAmountToCard = "/api.user.v1.User/AmountToCard"
+const OperationUserCodeList = "/api.user.v1.User/CodeList"
 const OperationUserCreateNonce = "/api.user.v1.User/CreateNonce"
 const OperationUserEthAuthorize = "/api.user.v1.User/EthAuthorize"
 const OperationUserGetUser = "/api.user.v1.User/GetUser"
@@ -41,6 +42,8 @@ type UserHTTPServer interface {
 	AmountTo(context.Context, *AmountToRequest) (*AmountToReply, error)
 	// AmountToCard 划转
 	AmountToCard(context.Context, *AmountToCardRequest) (*AmountToCardReply, error)
+	// CodeList 明细列表
+	CodeList(context.Context, *CodeListRequest) (*CodeListReply, error)
 	CreateNonce(context.Context, *CreateNonceRequest) (*CreateNonceReply, error)
 	EthAuthorize(context.Context, *EthAuthorizeRequest) (*EthAuthorizeReply, error)
 	// GetUser 个人信息
@@ -77,6 +80,7 @@ func RegisterUserHTTPServer(s *http.Server, srv UserHTTPServer) {
 	r.GET("/api/app_server/order_list", _User_OrderList0_HTTP_Handler(srv))
 	r.GET("/api/app_server/reward_list", _User_RewardList0_HTTP_Handler(srv))
 	r.GET("/api/app_server/record_list", _User_RecordList0_HTTP_Handler(srv))
+	r.GET("/api/app_server/code_list", _User_CodeList0_HTTP_Handler(srv))
 	r.POST("/api/app_server/open_card", _User_OpenCard0_HTTP_Handler(srv))
 	r.POST("/api/app_server/open_card_two", _User_OpenCardTwo0_HTTP_Handler(srv))
 	r.POST("/api/app_server/look_card", _User_LookCard0_HTTP_Handler(srv))
@@ -223,6 +227,25 @@ func _User_RecordList0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) e
 			return err
 		}
 		reply := out.(*RecordListReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _User_CodeList0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CodeListRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserCodeList)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.CodeList(ctx, req.(*CodeListRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*CodeListReply)
 		return ctx.Result(200, reply)
 	}
 }
@@ -428,6 +451,7 @@ func _User_Withdraw0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) err
 type UserHTTPClient interface {
 	AmountTo(ctx context.Context, req *AmountToRequest, opts ...http.CallOption) (rsp *AmountToReply, err error)
 	AmountToCard(ctx context.Context, req *AmountToCardRequest, opts ...http.CallOption) (rsp *AmountToCardReply, err error)
+	CodeList(ctx context.Context, req *CodeListRequest, opts ...http.CallOption) (rsp *CodeListReply, err error)
 	CreateNonce(ctx context.Context, req *CreateNonceRequest, opts ...http.CallOption) (rsp *CreateNonceReply, err error)
 	EthAuthorize(ctx context.Context, req *EthAuthorizeRequest, opts ...http.CallOption) (rsp *EthAuthorizeReply, err error)
 	GetUser(ctx context.Context, req *GetUserRequest, opts ...http.CallOption) (rsp *GetUserReply, err error)
@@ -472,6 +496,19 @@ func (c *UserHTTPClientImpl) AmountToCard(ctx context.Context, in *AmountToCardR
 	opts = append(opts, http.Operation(OperationUserAmountToCard))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in.SendBody, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *UserHTTPClientImpl) CodeList(ctx context.Context, in *CodeListRequest, opts ...http.CallOption) (*CodeListReply, error) {
+	var out CodeListReply
+	pattern := "/api/app_server/code_list"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserCodeList))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

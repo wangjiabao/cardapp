@@ -81,6 +81,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /api/app_server/code_list:
+        get:
+            tags:
+                - User
+            description: 明细列表
+            operationId: User_CodeList
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CodeListReply'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /api/app_server/create_nonce:
         post:
             tags:
@@ -430,6 +454,24 @@ components:
                 amount:
                     type: string
                 address:
+                    type: string
+        CodeListReply:
+            type: object
+            properties:
+                status:
+                    type: string
+                count:
+                    type: string
+                list:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CodeListReply_List'
+        CodeListReply_List:
+            type: object
+            properties:
+                createdAt:
+                    type: string
+                code:
                     type: string
         CreateNonceReply:
             type: object

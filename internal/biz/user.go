@@ -1467,6 +1467,11 @@ func (uuc *UserUseCase) AmountTo(ctx context.Context, req *pb.AmountToRequest, u
 	}, nil
 }
 
+func (uuc *UserUseCase) CodeList(ctx context.Context, req *pb.CodeListRequest, userId uint64) (*pb.CodeListReply, error) {
+	res := make([]*pb.CodeListReply_List, 0)
+	return &pb.CodeListReply{List: res, Count: 0, Status: "ok"}, nil
+}
+
 func (uuc *UserUseCase) Withdraw(ctx context.Context, req *pb.WithdrawRequest, userId uint64) (*pb.WithdrawReply, error) {
 	var (
 		user         *User

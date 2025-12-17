@@ -110,6 +110,23 @@ func (u *UserService) RewardList(ctx context.Context, req *pb.RewardListRequest)
 	return u.uuc.RewardList(ctx, req, userId)
 }
 
+func (u *UserService) CodeList(ctx context.Context, req *pb.CodeListRequest) (*pb.CodeListReply, error) {
+	// 在上下文 context 中取出 claims 对象
+	var userId uint64
+	if claims, ok := jwt.FromContext(ctx); ok {
+		c := claims.(jwt2.MapClaims)
+		if c["UserId"] == nil {
+			return &pb.CodeListReply{
+				Status: "无效TOKEN",
+			}, nil
+		}
+
+		userId = uint64(c["UserId"].(float64))
+	}
+
+	return u.uuc.CodeList(ctx, req, userId)
+}
+
 // CreateNonce createNonce.
 func (u *UserService) CreateNonce(ctx context.Context, req *pb.CreateNonceRequest) (*pb.CreateNonceReply, error) {
 	userAddress := req.SendBody.Address // 以太坊账户
