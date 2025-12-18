@@ -537,6 +537,10 @@ components:
                     type: string
                 cardAmountTwo:
                     type: string
+                pic:
+                    type: string
+                picTwo:
+                    type: string
         GoogleProtobufAny:
             type: object
             properties:

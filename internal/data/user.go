@@ -257,6 +257,8 @@ func (u *UserRepo) GetUserById(userId uint64) (*biz.User, error) {
 		CardTwo:       user.CardTwo,
 		CanVip:        user.CanVip,
 		VipThree:      user.VipThree,
+		Pic:           user.Pic,
+		PicTwo:        user.PicTwo,
 	}, nil
 }
 

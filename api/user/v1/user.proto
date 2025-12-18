@@ -184,6 +184,8 @@ message GetUserReply {
 	uint64 vipThree = 13;
 	string cardTwo = 14;
 	string cardAmountTwo = 15;
+	string pic = 16;
+	string picTwo = 17;
 }
 
 message RecommendListRequest {

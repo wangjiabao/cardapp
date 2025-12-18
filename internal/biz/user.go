@@ -281,6 +281,8 @@ func (uuc *UserUseCase) GetUserById(ctx context.Context, userId uint64) (*pb.Get
 		VipThree:         user.VipThree,
 		CardTwo:          cardTwo,
 		CardAmountTwo:    cardAmountTwo,
+		PicTwo:           user.PicTwo,
+		Pic:              user.Pic,
 	}, nil
 }
 
@@ -1540,6 +1542,8 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 		return
 	}
 	defer file.Close()
+
+	fmt.Println(11)
 
 	uS := strconv.FormatUint(user.ID, 10)
 	picName := uS + num + ".png"
