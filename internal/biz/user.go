@@ -1528,7 +1528,6 @@ func (uuc *UserUseCase) CodeList(ctx context.Context, req *pb.CodeListRequest, u
 	}
 
 	for _, v := range codeList {
-		fmt.Println(v)
 		res = append(res, &pb.CodeListReply_List{
 			CreatedAt: v.Time.Add(8 * time.Hour).Format("2006-01-02 15:04:05"),
 			Code:      v.Code,
