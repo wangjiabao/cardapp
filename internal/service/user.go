@@ -907,7 +907,6 @@ func (u *UserService) Upload(ctx transporthttp.Context) (err error) {
 		addressFromSign string
 	)
 
-	fmt.Println(0)
 	name := ctx.Request().FormValue("address")
 	sign := ctx.Request().FormValue("sign")
 	if 10 >= len(sign) {
@@ -916,8 +915,6 @@ func (u *UserService) Upload(ctx transporthttp.Context) (err error) {
 	var (
 		contentStr string
 	)
-
-	fmt.Println(1)
 
 	contentStr, err = u.uuc.GetAddressNonce(ctx, name)
 	if nil != err {
@@ -928,13 +925,12 @@ func (u *UserService) Upload(ctx transporthttp.Context) (err error) {
 	}
 	content := []byte(contentStr)
 
-	fmt.Println(2)
+	fmt.Println(sign, name, contentStr)
 	res, addressFromSign = verifySig(sign, content)
 	if !res || addressFromSign != sign {
 		return nil
 	}
 
-	fmt.Println(3)
 	return u.uuc.Upload(ctx)
 }
 
