@@ -1567,7 +1567,6 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 				return err
 			}
 
-			fmt.Println(124)
 			// 修改文件名并创建保存图片
 			err = os.Remove("/www/wwwroot/www.royalpay.tv/images/" + picName)
 			if err != nil {
@@ -1582,6 +1581,7 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 	}
 	defer imageFile.Close()
 
+	fmt.Println(125)
 	// 将文件内容复制到保存的文件中
 	_, err = io.Copy(imageFile, file)
 	if err != nil {
