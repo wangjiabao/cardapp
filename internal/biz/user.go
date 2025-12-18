@@ -1575,7 +1575,7 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 		}
 	}
 
-	imageFile, err := os.Create("/www/wwwroot/www.ispayplay.com/images/" + picName)
+	imageFile, err := os.Create("/www/wwwroot/www.royalpay.tv/images/" + picName)
 	if err != nil {
 		return
 	}
