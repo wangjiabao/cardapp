@@ -316,6 +316,7 @@ message RecordListReply {
 
 message CodeListRequest {
 	uint64 page = 1; // 页数
+	uint64 num = 2;
 }
 
 message CodeListReply {

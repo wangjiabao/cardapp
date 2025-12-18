@@ -13,40 +13,52 @@ import (
 )
 
 type User struct {
-	ID            uint64    `gorm:"primarykey;type:int"`
-	Address       string    `gorm:"type:varchar(100);default:'no'"`
-	Card          string    `gorm:"type:varchar(100);not null;default:'no'"`
-	CardOrderId   string    `gorm:"type:varchar(100);not null;default:'no'"`
-	CardNumber    string    `gorm:"type:varchar(100);not null;default:'no'"`
-	CardAmount    float64   `gorm:"type:decimal(65,20);not null"`
-	Amount        float64   `gorm:"type:decimal(65,20)"`
-	IsDelete      uint64    `gorm:"type:int"`
-	Vip           uint64    `gorm:"type:int"`
-	MyTotalAmount uint64    `gorm:"type:bigint"`
-	AmountTwo     uint64    `gorm:"type:bigint"`
-	FirstName     string    `gorm:"type:varchar(45);not null;default:'no'"`
-	LastName      string    `gorm:"type:varchar(45);not null;default:'no'"`
-	Email         string    `gorm:"type:varchar(100);not null;default:'no'"`
-	CountryCode   string    `gorm:"type:varchar(45);not null;default:'no'"`
-	Phone         string    `gorm:"type:varchar(45);not null;default:'no'"`
-	City          string    `gorm:"type:varchar(100);not null;default:'no'"`
-	Country       string    `gorm:"type:varchar(100);not null;default:'no'"`
-	Street        string    `gorm:"type:varchar(100);not null;default:'no'"`
-	PostalCode    string    `gorm:"type:varchar(45);not null;default:'no'"`
-	BirthDate     string    `gorm:"type:varchar(45);not null;default:'no'"`
-	MaxCardQuota  uint64    `gorm:"type:bigint"`
-	ProductId     string    `gorm:"type:varchar(45);not null;default:'0'"`
-	CardUserId    string    `gorm:"type:varchar(45);not null;default:'0'"`
-	CreatedAt     time.Time `gorm:"type:datetime;not null"`
-	UpdatedAt     time.Time `gorm:"type:datetime;not null"`
-	UserCount     uint64    `gorm:"type:int"`
-	VipTwo        uint64    `gorm:"type:int"`
-	CardTwo       uint64    `gorm:"type:int"`
-	CanVip        uint64    `gorm:"type:int"`
-	VipThree      uint64    `gorm:"type:int"`
-	CardTwoNumber string    `gorm:"type:varchar(100);not null;default:'no'"`
-	Pic           string    `gorm:"type:varchar(45);not null;default:'no'"`
-	PicTwo        string    `gorm:"type:varchar(45);not null;default:'no'"`
+	ID               uint64    `gorm:"primarykey;type:int"`
+	Address          string    `gorm:"type:varchar(100);default:'no'"`
+	Card             string    `gorm:"type:varchar(100);not null;default:'no'"`
+	CardOrderId      string    `gorm:"type:varchar(100);not null;default:'no'"`
+	CardNumber       string    `gorm:"type:varchar(100);not null;default:'no'"`
+	CardAmount       float64   `gorm:"type:decimal(65,20);not null"`
+	Amount           float64   `gorm:"type:decimal(65,20)"`
+	IsDelete         uint64    `gorm:"type:int"`
+	Vip              uint64    `gorm:"type:int"`
+	MyTotalAmount    uint64    `gorm:"type:bigint"`
+	AmountTwo        uint64    `gorm:"type:bigint"`
+	FirstName        string    `gorm:"type:varchar(45);not null;default:'no'"`
+	LastName         string    `gorm:"type:varchar(45);not null;default:'no'"`
+	Email            string    `gorm:"type:varchar(100);not null;default:'no'"`
+	CountryCode      string    `gorm:"type:varchar(45);not null;default:'no'"`
+	Phone            string    `gorm:"type:varchar(45);not null;default:'no'"`
+	City             string    `gorm:"type:varchar(100);not null;default:'no'"`
+	Country          string    `gorm:"type:varchar(100);not null;default:'no'"`
+	Street           string    `gorm:"type:varchar(100);not null;default:'no'"`
+	PostalCode       string    `gorm:"type:varchar(45);not null;default:'no'"`
+	BirthDate        string    `gorm:"type:varchar(45);not null;default:'no'"`
+	MaxCardQuota     uint64    `gorm:"type:bigint"`
+	ProductId        string    `gorm:"type:varchar(45);not null;default:'0'"`
+	CardUserId       string    `gorm:"type:varchar(45);not null;default:'0'"`
+	CreatedAt        time.Time `gorm:"type:datetime;not null"`
+	UpdatedAt        time.Time `gorm:"type:datetime;not null"`
+	UserCount        uint64    `gorm:"type:int"`
+	VipTwo           uint64    `gorm:"type:int"`
+	CardTwo          uint64    `gorm:"type:int"`
+	CanVip           uint64    `gorm:"type:int"`
+	VipThree         uint64    `gorm:"type:int"`
+	CardTwoNumber    string    `gorm:"type:varchar(100);not null;default:'no'"`
+	CardNumberRel    string    `gorm:"type:varchar(100);not null;default:'no'"`
+	CardNumberRelTwo string    `gorm:"type:varchar(100);not null;default:'no'"`
+	Pic              string    `gorm:"type:varchar(45);not null;default:'no'"`
+	PicTwo           string    `gorm:"type:varchar(45);not null;default:'no'"`
+}
+
+type CardOrder struct {
+	ID        uint64     `gorm:"primarykey;type:int"`
+	Last      uint64     `gorm:"type:int;not null"`                       // createTime(ms)
+	Code      string     `gorm:"type:varchar(100);not null;default:'no'"` // referenceId
+	Card      string     `gorm:"type:varchar(100);not null;default:'no'"` // referenceId
+	Time      *time.Time `gorm:"type:datetime;not null"`
+	CreatedAt time.Time  `gorm:"type:datetime;not null"`
+	UpdatedAt time.Time  `gorm:"type:datetime;not null"`
 }
 
 type CardTwo struct {
@@ -231,34 +243,36 @@ func (u *UserRepo) GetUserById(userId uint64) (*biz.User, error) {
 	}
 
 	return &biz.User{
-		CardAmount:    user.CardAmount,
-		MyTotalAmount: user.MyTotalAmount,
-		AmountTwo:     user.AmountTwo,
-		IsDelete:      user.IsDelete,
-		Vip:           user.Vip,
-		ID:            user.ID,
-		Address:       user.Address,
-		Card:          user.Card,
-		Amount:        user.Amount,
-		CardNumber:    user.CardNumber,
-		CardTwoNumber: user.CardTwoNumber,
-		CardOrderId:   user.CardOrderId,
-		CreatedAt:     user.CreatedAt,
-		UpdatedAt:     user.UpdatedAt,
-		CardUserId:    user.CardUserId,
-		ProductId:     user.ProductId,
-		MaxCardQuota:  user.MaxCardQuota,
-		Email:         user.Email,
-		UserCount:     user.UserCount,
-		Country:       user.Country,
-		CountryCode:   user.CountryCode,
-		Phone:         user.Phone,
-		VipTwo:        user.VipTwo,
-		CardTwo:       user.CardTwo,
-		CanVip:        user.CanVip,
-		VipThree:      user.VipThree,
-		Pic:           user.Pic,
-		PicTwo:        user.PicTwo,
+		CardAmount:       user.CardAmount,
+		MyTotalAmount:    user.MyTotalAmount,
+		AmountTwo:        user.AmountTwo,
+		IsDelete:         user.IsDelete,
+		Vip:              user.Vip,
+		ID:               user.ID,
+		Address:          user.Address,
+		Card:             user.Card,
+		Amount:           user.Amount,
+		CardNumber:       user.CardNumber,
+		CardTwoNumber:    user.CardTwoNumber,
+		CardOrderId:      user.CardOrderId,
+		CreatedAt:        user.CreatedAt,
+		UpdatedAt:        user.UpdatedAt,
+		CardUserId:       user.CardUserId,
+		ProductId:        user.ProductId,
+		MaxCardQuota:     user.MaxCardQuota,
+		Email:            user.Email,
+		UserCount:        user.UserCount,
+		Country:          user.Country,
+		CountryCode:      user.CountryCode,
+		Phone:            user.Phone,
+		VipTwo:           user.VipTwo,
+		CardTwo:          user.CardTwo,
+		CanVip:           user.CanVip,
+		VipThree:         user.VipThree,
+		Pic:              user.Pic,
+		PicTwo:           user.PicTwo,
+		CardNumberRelTwo: user.CardNumberRelTwo,
+		CardNumberRel:    user.CardNumberRel,
 	}, nil
 }
 
@@ -946,6 +960,40 @@ func (u *UserRepo) GetUserRecordByUserIdPage(ctx context.Context, b *biz.Paginat
 			Opt:        "",
 			CreatedAt:  r.CreatedAt,
 			UpdatedAt:  time.Time{},
+		})
+	}
+
+	return res, nil, count
+}
+
+// GetUserCodePage .
+func (u *UserRepo) GetUserCodePage(ctx context.Context, b *biz.Pagination, card string) ([]*biz.CardOrder, error, int64) {
+	var (
+		count   int64
+		rewards []*CardOrder
+	)
+
+	res := make([]*biz.CardOrder, 0)
+
+	instance := u.data.db.Table("card_code").Where("card=?", card).Order("id desc")
+
+	instance = instance.Count(&count)
+
+	if err := instance.Scopes(Paginate(b.PageNum, b.PageSize)).Find(&rewards).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return res, errors.NotFound("REWARD_NOT_FOUND", "reward not found"), 0
+		}
+
+		return nil, errors.New(500, "REWARD ERROR", err.Error()), 0
+	}
+
+	for _, reward := range rewards {
+		res = append(res, &biz.CardOrder{
+			ID:   reward.ID,
+			Last: reward.Last,
+			Code: reward.Code,
+			Card: reward.Card,
+			Time: reward.Time,
 		})
 	}
 

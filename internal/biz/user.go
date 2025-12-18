@@ -62,6 +62,18 @@ type User struct {
 	Gender           string
 	Pic              string
 	PicTwo           string
+	CardNumberRel    string
+	CardNumberRelTwo string
+}
+
+type CardOrder struct {
+	ID        uint64
+	Last      uint64
+	Code      string
+	Card      string
+	Time      *time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type UserRecommend struct {
@@ -145,6 +157,7 @@ type UserRepo interface {
 	UploadCardChange(ctx context.Context, userId uint64) error
 	UploadCardOneLock(ctx context.Context, userId uint64) error
 	UploadCardTwoLock(ctx context.Context, userId uint64) error
+	GetUserCodePage(ctx context.Context, b *Pagination, card string) ([]*CardOrder, error, int64)
 }
 
 type UserUseCase struct {
@@ -1471,7 +1484,49 @@ func (uuc *UserUseCase) AmountTo(ctx context.Context, req *pb.AmountToRequest, u
 
 func (uuc *UserUseCase) CodeList(ctx context.Context, req *pb.CodeListRequest, userId uint64) (*pb.CodeListReply, error) {
 	res := make([]*pb.CodeListReply_List, 0)
-	return &pb.CodeListReply{List: res, Count: 0, Status: "ok"}, nil
+
+	var (
+		user     *User
+		err      error
+		count    int64
+		cardNum  string
+		codeList []*CardOrder
+	)
+	user, err = uuc.repo.GetUserById(userId)
+	if nil == user || nil != err {
+		return &pb.CodeListReply{Status: "用户不存在"}, nil
+	}
+
+	if 2 == req.Num {
+		if 5 < len(user.CardNumberRelTwo) {
+			cardNum = user.CardNumberRelTwo
+		}
+	} else {
+		if 5 < len(user.CardNumberRel) {
+			cardNum = user.CardNumberRel
+		}
+	}
+
+	codeList, err, count = uuc.repo.GetUserCodePage(ctx, &Pagination{
+		PageNum:  int(req.Page),
+		PageSize: 20,
+	}, cardNum)
+	if nil != err {
+		return &pb.CodeListReply{
+			Status: "ok",
+			Count:  uint64(count),
+			List:   res,
+		}, err
+	}
+
+	for _, v := range codeList {
+		res = append(res, &pb.CodeListReply_List{
+			CreatedAt: v.Time.Add(8 * time.Hour).Format("2006-01-02 15:04:05"),
+			Code:      v.Code,
+		})
+	}
+
+	return &pb.CodeListReply{List: res, Count: uint64(count), Status: "ok"}, nil
 }
 
 func (uuc *UserUseCase) Withdraw(ctx context.Context, req *pb.WithdrawRequest, userId uint64) (*pb.WithdrawReply, error) {
