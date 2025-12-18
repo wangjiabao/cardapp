@@ -1530,8 +1530,8 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 	r := ctx.Request()  // *http.Request
 
 	// 拆分：文件上限 vs 请求体上限（请求体要比文件略大，留给 multipart/字段开销）
-	const maxFile int64 = 2 << 20     // 2MB 文件
-	const maxBody = maxFile + 512<<10 // 2MB + 512KB（按需调大/调小）
+	const maxFile int64 = 10 << 20    // 10MB 文件
+	const maxBody = maxFile + 512<<10 // 10MB + 512KB（如果表单字段多可再加大点）
 
 	// 1) 限制整个请求体
 	r.Body = http.MaxBytesReader(w, r.Body, maxBody)
