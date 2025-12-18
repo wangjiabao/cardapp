@@ -1499,11 +1499,11 @@ func (uuc *UserUseCase) CodeList(ctx context.Context, req *pb.CodeListRequest, u
 
 	if 2 == req.Num {
 		if 5 < len(user.CardNumberRelTwo) {
-			cardNum = user.CardNumberRelTwo
+			cardNum = MaskCard8_6_4(user.CardNumberRelTwo)
 		}
 	} else {
 		if 5 < len(user.CardNumberRel) {
-			cardNum = user.CardNumberRel
+			cardNum = MaskCard8_6_4(user.CardNumberRel)
 		}
 	}
 
@@ -1535,6 +1535,39 @@ func (uuc *UserUseCase) CodeList(ctx context.Context, req *pb.CodeListRequest, u
 	}
 
 	return &pb.CodeListReply{List: res, Count: uint64(count), Status: "ok"}, nil
+}
+
+func MaskCard8_6_4(card string) string {
+	// 只保留数字
+	d := onlyDigits(card)
+	if len(d) < 12 { // 太短就原样返回（你也可以返回空）
+		return card
+	}
+
+	// 前8位
+	prefix := d
+	if len(d) >= 8 {
+		prefix = d[:8]
+	}
+
+	// 后4位
+	suffix := d
+	if len(d) >= 4 {
+		suffix = d[len(d)-4:]
+	}
+
+	return prefix + "xxxxxx" + suffix
+}
+
+// onlyDigits 仅保留数字字符
+func onlyDigits(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 func (uuc *UserUseCase) Withdraw(ctx context.Context, req *pb.WithdrawRequest, userId uint64) (*pb.WithdrawReply, error) {
