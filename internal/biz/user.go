@@ -281,8 +281,8 @@ func (uuc *UserUseCase) GetUserById(ctx context.Context, userId uint64) (*pb.Get
 		VipThree:         user.VipThree,
 		CardTwo:          cardTwo,
 		CardAmountTwo:    cardAmountTwo,
-		PicTwo:           user.PicTwo,
-		Pic:              user.Pic,
+		PicTwo:           "/images/" + user.PicTwo,
+		Pic:              "/images/" + user.Pic,
 	}, nil
 }
 
