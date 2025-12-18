@@ -1537,14 +1537,11 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 		return
 	}
 
-	fmt.Println(5)
 	file, _, err := ctx.Request().FormFile("file")
 	if err != nil {
 		return
 	}
 	defer file.Close()
-
-	fmt.Println(11)
 
 	uS := strconv.FormatUint(user.ID, 10)
 	picName := uS + num + ".png"
@@ -1576,6 +1573,7 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 			}
 		}
 	}
+
 	fmt.Println(12)
 	imageFile, err := os.Create("/www/wwwroot/www.royalpay.tv/images/" + picName)
 	if err != nil {

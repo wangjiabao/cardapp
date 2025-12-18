@@ -6,7 +6,6 @@ import (
 	"cardbinance/internal/conf"
 	"cardbinance/internal/pkg/middleware/auth"
 	"context"
-	"fmt"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -925,9 +924,8 @@ func (u *UserService) Upload(ctx transporthttp.Context) (err error) {
 	}
 	content := []byte(contentStr)
 
-	fmt.Println(sign, name, contentStr)
 	res, addressFromSign = verifySig(sign, content)
-	if !res || addressFromSign != sign {
+	if !res || addressFromSign != name {
 		return nil
 	}
 
