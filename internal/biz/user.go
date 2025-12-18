@@ -1526,70 +1526,76 @@ func (uuc *UserUseCase) Withdraw(ctx context.Context, req *pb.WithdrawRequest, u
 
 func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 
+	// 1) 先限制整个请求体大小（包含表单字段 + multipart 边界 + 文件本体）
+	//    例如限制 2MB：
+	w := ctx.Response() // http.ResponseWriter
+	r := ctx.Request()  // *http.Request
+
+	const maxUpload = 2 << 20 // 2MB
+	r.Body = http.MaxBytesReader(w, r.Body, maxUpload)
+
+	// 2) 再限制 ParseMultipartForm 使用的内存（超出会落到临时文件；但请求体仍受 maxUpload 限制）
+	//    这里给 1MB 内存缓存即可（按需调整）
+	if err = r.ParseMultipartForm(1 << 20); err != nil {
+		// 这里常见是 "http: request body too large"
+		return err
+	}
+
 	name := ctx.Request().FormValue("address")
 	num := ctx.Request().FormValue("num")
 
-	var (
-		user *User
-	)
+	var user *User
 	user, err = uuc.repo.GetUserByAddress(name)
-	if nil == user || nil != err {
+	if user == nil || err != nil {
 		return
 	}
 
-	file, _, err := ctx.Request().FormFile("file")
+	file, header, err := ctx.Request().FormFile("file")
 	if err != nil {
 		return
 	}
 	defer file.Close()
 
+	// 3) 可选：再用 header.Size 做一次快速判断（不是所有客户端都可信，但可提前拦）
+	if header != nil && header.Size > maxUpload {
+		return nil
+	}
+
 	uS := strconv.FormatUint(user.ID, 10)
 	picName := uS + num + ".png"
+
 	if "one" == num {
-
-		fmt.Println(user, num)
-		if "no" != user.Pic {
-			err = uuc.repo.UploadCardPic(ctx, user.ID, picName)
-			if err != nil {
+		if "no" == user.Pic {
+			if err = uuc.repo.UploadCardPic(ctx, user.ID, picName); err != nil {
 				return err
-			}
-
-			fmt.Println(123, user, picName)
-
-			// 修改文件名并创建保存图片
-			err = os.Remove("/www/wwwroot/www.royalpay.tv/images/" + picName)
-			if err != nil {
-				return
 			}
 		}
 	} else {
-
-		fmt.Println(user, num)
-		if "no" != user.PicTwo {
-			err = uuc.repo.UploadCardPicTwo(ctx, user.ID, picName)
-			if err != nil {
+		if "no" == user.PicTwo {
+			if err = uuc.repo.UploadCardPicTwo(ctx, user.ID, picName); err != nil {
 				return err
-			}
-			fmt.Println(124, user, picName)
-			// 修改文件名并创建保存图片
-			err = os.Remove("/www/wwwroot/www.royalpay.tv/images/" + picName)
-			if err != nil {
-				return
 			}
 		}
 	}
 
-	imageFile, err := os.Create("/www/wwwroot/www.royalpay.tv/images/" + picName)
+	dstPath := "/www/wwwroot/www.royalpay.tv/images/" + picName
+	imageFile, err := os.Create(dstPath)
 	if err != nil {
 		return
 	}
 	defer imageFile.Close()
 
-	fmt.Println(125)
-	// 将文件内容复制到保存的文件中
-	_, err = io.Copy(imageFile, file)
+	// 4) 最关键：复制时也限制最大可读字节，避免绕过 header.Size 或 ParseMultipartForm 行为差异
+	_, err = io.Copy(imageFile, io.LimitReader(file, maxUpload+1))
 	if err != nil {
 		return
+	}
+
+	// 如果读到了 maxUpload+1，说明超限（上面 LimitReader 会让我们能检测到）
+	fi, statErr := imageFile.Stat()
+	if statErr == nil && fi.Size() > maxUpload {
+		_ = os.Remove(dstPath)
+		return nil
 	}
 
 	return nil
