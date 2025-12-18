@@ -1526,19 +1526,19 @@ func (uuc *UserUseCase) Withdraw(ctx context.Context, req *pb.WithdrawRequest, u
 
 func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 
-	// 1) 先限制整个请求体大小（包含表单字段 + multipart 边界 + 文件本体）
-	//    例如限制 2MB：
 	w := ctx.Response() // http.ResponseWriter
 	r := ctx.Request()  // *http.Request
 
-	const maxUpload = 2 << 20 // 2MB
-	r.Body = http.MaxBytesReader(w, r.Body, maxUpload)
+	// 拆分：文件上限 vs 请求体上限（请求体要比文件略大，留给 multipart/字段开销）
+	const maxFile int64 = 2 << 20     // 2MB 文件
+	const maxBody = maxFile + 512<<10 // 2MB + 512KB（按需调大/调小）
 
-	// 2) 再限制 ParseMultipartForm 使用的内存（超出会落到临时文件；但请求体仍受 maxUpload 限制）
-	//    这里给 1MB 内存缓存即可（按需调整）
+	// 1) 限制整个请求体
+	r.Body = http.MaxBytesReader(w, r.Body, maxBody)
+
+	// 2) 限制 multipart 解析时使用的内存（超出会落到临时文件；但请求体仍受 maxBody 限制）
 	if err = r.ParseMultipartForm(1 << 20); err != nil {
-		// 这里常见是 "http: request body too large"
-		return err
+		return err // 常见：http: request body too large
 	}
 
 	name := ctx.Request().FormValue("address")
@@ -1556,8 +1556,8 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 	}
 	defer file.Close()
 
-	// 3) 可选：再用 header.Size 做一次快速判断（不是所有客户端都可信，但可提前拦）
-	if header != nil && header.Size > maxUpload {
+	// 3) 快速拦截（header.Size 不完全可信，但能提前挡掉大部分）
+	if header != nil && header.Size > maxFile {
 		return nil
 	}
 
@@ -1579,23 +1579,36 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 	}
 
 	dstPath := "/www/wwwroot/www.royalpay.tv/images/" + picName
-	imageFile, err := os.Create(dstPath)
-	if err != nil {
-		return
-	}
-	defer imageFile.Close()
 
-	// 4) 最关键：复制时也限制最大可读字节，避免绕过 header.Size 或 ParseMultipartForm 行为差异
-	_, err = io.Copy(imageFile, io.LimitReader(file, maxUpload+1))
+	tmpPath := dstPath + ".tmp"
+
+	// 先写临时文件，成功后 rename，避免半截文件
+	imageFile, err := os.Create(tmpPath)
 	if err != nil {
-		return
+		return err
 	}
 
-	// 如果读到了 maxUpload+1，说明超限（上面 LimitReader 会让我们能检测到）
-	fi, statErr := imageFile.Stat()
-	if statErr == nil && fi.Size() > maxUpload {
-		_ = os.Remove(dstPath)
+	// 4) 关键：最多读 maxFile+1 字节，超过就能判断超限
+	n, copyErr := io.CopyN(imageFile, file, maxFile+1)
+
+	closeErr := imageFile.Close()
+	if copyErr != nil && copyErr != io.EOF {
+		_ = os.Remove(tmpPath)
+		return copyErr
+	}
+	if closeErr != nil {
+		_ = os.Remove(tmpPath)
+		return closeErr
+	}
+	if n > maxFile {
+		_ = os.Remove(tmpPath)
 		return nil
+	}
+
+	// 原子替换到最终路径
+	if err := os.Rename(tmpPath, dstPath); err != nil {
+		_ = os.Remove(tmpPath)
+		return err
 	}
 
 	return nil
