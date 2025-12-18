@@ -1546,13 +1546,15 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 	uS := strconv.FormatUint(user.ID, 10)
 	picName := uS + num + ".png"
 	if "one" == num {
+
+		fmt.Println(user, num)
 		if "no" != user.Pic {
 			err = uuc.repo.UploadCardPic(ctx, user.ID, picName)
 			if err != nil {
 				return err
 			}
 
-			fmt.Println(123)
+			fmt.Println(123, user, picName)
 
 			// 修改文件名并创建保存图片
 			err = os.Remove("/www/wwwroot/www.royalpay.tv/images/" + picName)
@@ -1561,12 +1563,14 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 			}
 		}
 	} else {
+
+		fmt.Println(user, num)
 		if "no" != user.PicTwo {
 			err = uuc.repo.UploadCardPicTwo(ctx, user.ID, picName)
 			if err != nil {
 				return err
 			}
-
+			fmt.Println(124, user, picName)
 			// 修改文件名并创建保存图片
 			err = os.Remove("/www/wwwroot/www.royalpay.tv/images/" + picName)
 			if err != nil {
