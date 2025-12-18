@@ -6,6 +6,7 @@ import (
 	"cardbinance/internal/conf"
 	"cardbinance/internal/pkg/middleware/auth"
 	"context"
+	"fmt"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -905,6 +906,8 @@ func (u *UserService) Upload(ctx transporthttp.Context) (err error) {
 		res             bool
 		addressFromSign string
 	)
+
+	fmt.Println(0)
 	name := ctx.Request().FormValue("address")
 	sign := ctx.Request().FormValue("sign")
 	if 10 >= len(sign) {
@@ -913,6 +916,8 @@ func (u *UserService) Upload(ctx transporthttp.Context) (err error) {
 	var (
 		contentStr string
 	)
+
+	fmt.Println(1)
 
 	contentStr, err = u.uuc.GetAddressNonce(ctx, name)
 	if nil != err {
@@ -923,11 +928,13 @@ func (u *UserService) Upload(ctx transporthttp.Context) (err error) {
 	}
 	content := []byte(contentStr)
 
+	fmt.Println(2)
 	res, addressFromSign = verifySig(sign, content)
 	if !res || addressFromSign != sign {
 		return nil
 	}
 
+	fmt.Println(3)
 	return u.uuc.Upload(ctx)
 }
 

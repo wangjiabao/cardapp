@@ -1537,6 +1537,7 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 		return
 	}
 
+	fmt.Println(5)
 	file, _, err := ctx.Request().FormFile("file")
 	if err != nil {
 		return
@@ -1560,6 +1561,7 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 				return
 			}
 		}
+		fmt.Println(13)
 	} else {
 		if "no" != user.PicTwo {
 			err = uuc.repo.UploadCardPicTwo(ctx, user.ID, picName)
@@ -1574,7 +1576,7 @@ func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
 			}
 		}
 	}
-
+	fmt.Println(12)
 	imageFile, err := os.Create("/www/wwwroot/www.royalpay.tv/images/" + picName)
 	if err != nil {
 		return
