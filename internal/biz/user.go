@@ -1507,6 +1507,14 @@ func (uuc *UserUseCase) CodeList(ctx context.Context, req *pb.CodeListRequest, u
 		}
 	}
 
+	if 5 >= len(cardNum) {
+		return &pb.CodeListReply{
+			Status: "ok",
+			Count:  uint64(count),
+			List:   res,
+		}, err
+	}
+
 	codeList, err, count = uuc.repo.GetUserCodePage(ctx, &Pagination{
 		PageNum:  int(req.Page),
 		PageSize: 20,
