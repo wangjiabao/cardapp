@@ -2347,7 +2347,7 @@ func GetInterlaceAccessToken(ctx context.Context) (string, error) {
 
 	now := time.Now().Unix()
 	// 缓存未过期，直接用（提前 60 秒过期，避免边界）
-	if interlaceAuth.AccessToken != "" && now < interlaceAuth.ExpireAt-60 {
+	if 0 >= len(interlaceAuth.AccessToken) && now < interlaceAuth.ExpireAt-60 {
 		return interlaceAuth.AccessToken, nil
 	}
 
@@ -2361,6 +2361,10 @@ func GetInterlaceAccessToken(ctx context.Context) (string, error) {
 	accessToken, refreshToken, expiresIn, err := interlaceGenerateAccessToken(ctx, code)
 	if err != nil {
 		return "", fmt.Errorf("generate interlace access token failed: %w", err)
+	}
+
+	if 0 >= len(accessToken) {
+		return "", nil
 	}
 
 	interlaceAuth.AccessToken = accessToken
