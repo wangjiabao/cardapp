@@ -581,7 +581,7 @@ func (uuc *UserUseCase) RewardList(ctx context.Context, req *pb.RewardListReques
 		err         error
 	)
 
-	if 1 > req.ReqType || 6 < req.ReqType {
+	if 1 > req.ReqType || 11 < req.ReqType {
 		return &pb.RewardListReply{
 			Status: "参数错误",
 			Count:  0,
