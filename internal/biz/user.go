@@ -2358,7 +2358,7 @@ func GetInterlaceAccessToken(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("get interlace code failed: %w", err)
 	}
 
-	accessToken, refreshToken, expiresIn, err := interlaceGenerateAccessToken(ctx, code)
+	accessToken, refreshToken, expiresIn, t, err := interlaceGenerateAccessToken(ctx, code)
 	if err != nil {
 		return "", fmt.Errorf("generate interlace access token failed: %w", err)
 	}
@@ -2369,7 +2369,7 @@ func GetInterlaceAccessToken(ctx context.Context) (string, error) {
 
 	interlaceAuth.AccessToken = accessToken
 	interlaceAuth.RefreshToken = refreshToken
-	interlaceAuth.ExpireAt = time.Now().Unix() + expiresIn
+	interlaceAuth.ExpireAt = t + expiresIn
 
 	return accessToken, nil
 }
@@ -2438,7 +2438,7 @@ type interlaceAccessTokenResp struct {
 	} `json:"data"`
 }
 
-func interlaceGenerateAccessToken(ctx context.Context, code string) (accessToken, refreshToken string, expiresIn int64, err error) {
+func interlaceGenerateAccessToken(ctx context.Context, code string) (accessToken, refreshToken string, expiresIn, t int64, err error) {
 	urlStr := fmt.Sprintf("%s/oauth/access-token", interlaceBaseURL)
 
 	reqBody := map[string]interface{}{
@@ -2449,7 +2449,7 @@ func interlaceGenerateAccessToken(ctx context.Context, code string) (accessToken
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, urlStr, bytes.NewReader(jsonData))
 	if err != nil {
-		return "", "", 0, err
+		return "", "", 0, 0, err
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
@@ -2457,7 +2457,7 @@ func interlaceGenerateAccessToken(ctx context.Context, code string) (accessToken
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", "", 0, err
+		return "", "", 0, 0, err
 	}
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
@@ -2465,26 +2465,26 @@ func interlaceGenerateAccessToken(ctx context.Context, code string) (accessToken
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", "", 0, err
+		return "", "", 0, 0, err
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", "", 0, fmt.Errorf("interlace access-token http %d: %s", resp.StatusCode, string(body))
+		return "", "", 0, 0, fmt.Errorf("interlace access-token http %d: %s", resp.StatusCode, string(body))
 	}
 
 	var result interlaceAccessTokenResp
 	if err := json.Unmarshal(body, &result); err != nil {
-		return "", "", 0, fmt.Errorf("interlace access-token unmarshal: %w", err)
+		return "", "", 0, 0, fmt.Errorf("interlace access-token unmarshal: %w", err)
 	}
 
 	if result.Code != "000000" {
-		return "", "", 0, fmt.Errorf("interlace access-token failed: code=%s msg=%s", result.Code, result.Message)
+		return "", "", 0, 0, fmt.Errorf("interlace access-token failed: code=%s msg=%s", result.Code, result.Message)
 	}
 	if result.Data.AccessToken == "" {
-		return "", "", 0, fmt.Errorf("interlace access-token success but accessToken empty")
+		return "", "", 0, 0, fmt.Errorf("interlace access-token success but accessToken empty")
 	}
 
-	return result.Data.AccessToken, result.Data.RefreshToken, result.Data.ExpiresIn, nil
+	return result.Data.AccessToken, result.Data.RefreshToken, result.Data.ExpiresIn, result.Data.Timestamp, nil
 }
 
 type InterlaceCardPrivateTokenResp struct {
@@ -2541,6 +2541,7 @@ func InterlaceGetCardPrivateAccessToken(ctx context.Context, accountId, cardId s
 	//fmt.Println(string(body))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		fmt.Println("at", interlaceAuth, time.Now().Unix())
 		return "", fmt.Errorf("interlace card private token http %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -2663,6 +2664,7 @@ func InterlaceCardTransferIn(ctx context.Context, in *InterlaceCardTransferInReq
 	fmt.Println("transfer-in resp:", string(respBody))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		fmt.Println("at", interlaceAuth, time.Now().Unix())
 		return nil, fmt.Errorf("interlace transfer in http %d: %s", resp.StatusCode, string(respBody))
 	}
 
@@ -2754,6 +2756,8 @@ func InterlaceGetCardSummary(ctx context.Context, accountId, cardId string) (*In
 	// fmt.Println("card-summary resp:", string(body))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+
+		fmt.Println("at", interlaceAuth, time.Now().Unix())
 		return nil, fmt.Errorf("interlace card summary http %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -2909,6 +2913,7 @@ func InterlaceListTransactions(ctx context.Context, in *InterlaceTxnListReq) ([]
 	// fmt.Println("txn-list resp:", string(body))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		fmt.Println("at", interlaceAuth, time.Now().Unix())
 		return nil, "", fmt.Errorf("interlace txn list http %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -3029,6 +3034,7 @@ func InterlaceFreezeCard(ctx context.Context, accountId, cardId string) (*Interl
 	// fmt.Println("freeze resp:", string(body))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		fmt.Println("at", interlaceAuth, time.Now().Unix())
 		return nil, fmt.Errorf("interlace freeze card http %d: %s", resp.StatusCode, string(body))
 	}
 
