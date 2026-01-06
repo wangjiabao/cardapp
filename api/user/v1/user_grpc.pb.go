@@ -28,6 +28,7 @@ const (
 	User_RecordList_FullMethodName     = "/api.user.v1.User/RecordList"
 	User_CodeList_FullMethodName       = "/api.user.v1.User/CodeList"
 	User_OpenCard_FullMethodName       = "/api.user.v1.User/OpenCard"
+	User_CheckCard_FullMethodName      = "/api.user.v1.User/CheckCard"
 	User_OpenCardTwo_FullMethodName    = "/api.user.v1.User/OpenCardTwo"
 	User_LookCard_FullMethodName       = "/api.user.v1.User/LookCard"
 	User_LookCardNew_FullMethodName    = "/api.user.v1.User/LookCardNew"
@@ -58,6 +59,7 @@ type UserClient interface {
 	CodeList(ctx context.Context, in *CodeListRequest, opts ...grpc.CallOption) (*CodeListReply, error)
 	// 开卡
 	OpenCard(ctx context.Context, in *OpenCardRequest, opts ...grpc.CallOption) (*OpenCardReply, error)
+	CheckCard(ctx context.Context, in *CheckCardRequest, opts ...grpc.CallOption) (*CheckCardReply, error)
 	OpenCardTwo(ctx context.Context, in *OpenCardRequest, opts ...grpc.CallOption) (*OpenCardReply, error)
 	// 开卡
 	LookCard(ctx context.Context, in *LookCardRequest, opts ...grpc.CallOption) (*LookCardReply, error)
@@ -164,6 +166,15 @@ func (c *userClient) OpenCard(ctx context.Context, in *OpenCardRequest, opts ...
 	return out, nil
 }
 
+func (c *userClient) CheckCard(ctx context.Context, in *CheckCardRequest, opts ...grpc.CallOption) (*CheckCardReply, error) {
+	out := new(CheckCardReply)
+	err := c.cc.Invoke(ctx, User_CheckCard_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userClient) OpenCardTwo(ctx context.Context, in *OpenCardRequest, opts ...grpc.CallOption) (*OpenCardReply, error) {
 	out := new(OpenCardReply)
 	err := c.cc.Invoke(ctx, User_OpenCardTwo_FullMethodName, in, out, opts...)
@@ -256,6 +267,7 @@ type UserServer interface {
 	CodeList(context.Context, *CodeListRequest) (*CodeListReply, error)
 	// 开卡
 	OpenCard(context.Context, *OpenCardRequest) (*OpenCardReply, error)
+	CheckCard(context.Context, *CheckCardRequest) (*CheckCardReply, error)
 	OpenCardTwo(context.Context, *OpenCardRequest) (*OpenCardReply, error)
 	// 开卡
 	LookCard(context.Context, *LookCardRequest) (*LookCardReply, error)
@@ -304,6 +316,9 @@ func (UnimplementedUserServer) CodeList(context.Context, *CodeListRequest) (*Cod
 }
 func (UnimplementedUserServer) OpenCard(context.Context, *OpenCardRequest) (*OpenCardReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OpenCard not implemented")
+}
+func (UnimplementedUserServer) CheckCard(context.Context, *CheckCardRequest) (*CheckCardReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckCard not implemented")
 }
 func (UnimplementedUserServer) OpenCardTwo(context.Context, *OpenCardRequest) (*OpenCardReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OpenCardTwo not implemented")
@@ -504,6 +519,24 @@ func _User_OpenCard_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_CheckCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckCardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).CheckCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_CheckCard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).CheckCard(ctx, req.(*CheckCardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _User_OpenCardTwo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(OpenCardRequest)
 	if err := dec(in); err != nil {
@@ -690,6 +723,10 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "OpenCard",
 			Handler:    _User_OpenCard_Handler,
+		},
+		{
+			MethodName: "CheckCard",
+			Handler:    _User_CheckCard_Handler,
 		},
 		{
 			MethodName: "OpenCardTwo",

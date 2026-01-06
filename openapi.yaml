@@ -81,6 +81,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /api/app_server/check_card:
+        post:
+            tags:
+                - User
+            operationId: User_CheckCard
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CheckCardRequest_SendBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CheckCardReply'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /api/app_server/code_list:
         get:
             tags:
@@ -458,6 +482,20 @@ components:
                 amount:
                     type: string
                 address:
+                    type: string
+        CheckCardReply:
+            type: object
+            properties:
+                status:
+                    type: string
+        CheckCardRequest_SendBody:
+            type: object
+            properties:
+                sign:
+                    type: string
+                checkType:
+                    type: string
+                num:
                     type: string
         CodeListReply:
             type: object

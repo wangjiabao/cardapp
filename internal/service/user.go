@@ -407,6 +407,76 @@ func (u *UserService) OpenCard(ctx context.Context, req *pb.OpenCardRequest) (*p
 	return u.uuc.OpenCard(ctx, req, userId)
 }
 
+func (u *UserService) CheckCard(ctx context.Context, req *pb.CheckCardRequest) (*pb.CheckCardReply, error) {
+	// 在上下文 context 中取出 claims 对象
+	var (
+		err    error
+		userId uint64
+	)
+
+	if claims, ok := jwt.FromContext(ctx); ok {
+		c := claims.(jwt2.MapClaims)
+		if c["UserId"] == nil {
+			return &pb.CheckCardReply{
+				Status: "无效TOKEN",
+			}, nil
+		}
+
+		userId = uint64(c["UserId"].(float64))
+	}
+
+	var (
+		user *biz.User
+	)
+	user, err = u.uuc.GetUserDataById(userId)
+	if nil != err {
+		return &pb.CheckCardReply{
+			Status: "无效TOKEN",
+		}, nil
+	}
+
+	if 1 == user.IsDelete {
+		return &pb.CheckCardReply{
+			Status: "用户已删除",
+		}, nil
+	}
+
+	var (
+		res             bool
+		addressFromSign string
+	)
+	if 10 >= len(req.SendBody.Sign) {
+		return &pb.CheckCardReply{
+			Status: "签名错误",
+		}, nil
+	}
+
+	var (
+		contentStr string
+	)
+	contentStr, err = u.uuc.GetAddressNonce(ctx, user.Address)
+	if nil != err {
+		return &pb.CheckCardReply{
+			Status: "错误",
+		}, nil
+	}
+	if 0 >= len(contentStr) {
+		return &pb.CheckCardReply{
+			Status: "错误nonce",
+		}, nil
+	}
+	content := []byte(contentStr)
+
+	res, addressFromSign = verifySig(req.SendBody.Sign, content)
+	if !res || addressFromSign != user.Address {
+		return &pb.CheckCardReply{
+			Status: "签名错误",
+		}, nil
+	}
+
+	return u.uuc.CheckCard(ctx, req, userId)
+}
+
 func (u *UserService) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest) (*pb.OpenCardReply, error) {
 	// 在上下文 context 中取出 claims 对象
 	var (

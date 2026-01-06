@@ -73,6 +73,13 @@ service User {
 		};
 	};
 
+	rpc CheckCard (CheckCardRequest) returns (CheckCardReply) {
+		option (google.api.http) = {
+			post: "/api/app_server/check_card"
+			body: "send_body"
+		};
+	};
+
 	rpc OpenCardTwo (OpenCardRequest) returns (OpenCardReply) {
 		option (google.api.http) = {
 			post: "/api/app_server/open_card_two"
@@ -227,6 +234,20 @@ message OpenCardRequest {
 }
 
 message OpenCardReply {
+	string status = 1;
+}
+
+message CheckCardRequest {
+	message SendBody {
+		string sign = 1;
+		uint64 checkType = 3; // 1实体卡，2虚拟卡
+		string num = 2; // 卡号16位纯数字的字符串，前后不要有空格
+	}
+
+	SendBody send_body = 1;
+}
+
+message CheckCardReply {
 	string status = 1;
 }
 

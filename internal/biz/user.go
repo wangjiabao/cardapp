@@ -139,6 +139,7 @@ type UserRepo interface {
 	GetUserRecommendLikeCode(code string) ([]*UserRecommend, error)
 	GetUserByUserIds(userIds []uint64) (map[uint64]*User, error)
 	CreateCard(ctx context.Context, userId uint64, user *User) error
+	UpdateCardCardNumberRel(ctx context.Context, userId uint64, cardNumberRel string) error
 	CreateCardTwo(ctx context.Context, userId uint64, user *User) error
 	GetAllUsers() ([]*User, error)
 	UpdateCard(ctx context.Context, userId uint64, cardOrderId, card string) error
@@ -1058,6 +1059,48 @@ func (uuc *UserUseCase) OpenCard(ctx context.Context, req *pb.OpenCardRequest, u
 	//}
 
 	return &pb.OpenCardReply{
+		Status: "ok",
+	}, nil
+}
+
+func (uuc *UserUseCase) CheckCard(ctx context.Context, req *pb.CheckCardRequest, userId uint64) (*pb.CheckCardReply, error) {
+	var (
+		user *User
+		err  error
+	)
+
+	user, err = uuc.repo.GetUserById(userId)
+	if nil == user || nil != err {
+		return &pb.CheckCardReply{Status: "用户不存在"}, nil
+	}
+
+	if 2 == req.SendBody.CheckType {
+		if 5 >= len(user.CardNumber) {
+			return &pb.CheckCardReply{Status: "未提交虚拟卡开卡信息"}, nil
+		}
+
+		if 16 != len(req.SendBody.Num) {
+			return &pb.CheckCardReply{Status: "卡号格式错误"}, nil
+		}
+
+		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
+			err = uuc.repo.UpdateCardCardNumberRel(ctx, userId, req.SendBody.Num)
+			if nil != err {
+				return err
+			}
+
+			return nil
+		}); nil != err {
+			fmt.Println(err, "开卡写入mysql错误", user)
+			return &pb.CheckCardReply{
+				Status: "开卡错误，联系管理员",
+			}, nil
+		}
+	} else {
+		return &pb.CheckCardReply{Status: "暂未开放"}, nil
+	}
+
+	return &pb.CheckCardReply{
 		Status: "ok",
 	}, nil
 }

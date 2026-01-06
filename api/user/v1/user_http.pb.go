@@ -21,6 +21,7 @@ const _ = http.SupportPackageIsVersion1
 
 const OperationUserAmountTo = "/api.user.v1.User/AmountTo"
 const OperationUserAmountToCard = "/api.user.v1.User/AmountToCard"
+const OperationUserCheckCard = "/api.user.v1.User/CheckCard"
 const OperationUserCodeList = "/api.user.v1.User/CodeList"
 const OperationUserCreateNonce = "/api.user.v1.User/CreateNonce"
 const OperationUserEthAuthorize = "/api.user.v1.User/EthAuthorize"
@@ -42,6 +43,7 @@ type UserHTTPServer interface {
 	AmountTo(context.Context, *AmountToRequest) (*AmountToReply, error)
 	// AmountToCard 划转
 	AmountToCard(context.Context, *AmountToCardRequest) (*AmountToCardReply, error)
+	CheckCard(context.Context, *CheckCardRequest) (*CheckCardReply, error)
 	// CodeList 明细列表
 	CodeList(context.Context, *CodeListRequest) (*CodeListReply, error)
 	CreateNonce(context.Context, *CreateNonceRequest) (*CreateNonceReply, error)
@@ -82,6 +84,7 @@ func RegisterUserHTTPServer(s *http.Server, srv UserHTTPServer) {
 	r.GET("/api/app_server/record_list", _User_RecordList0_HTTP_Handler(srv))
 	r.GET("/api/app_server/code_list", _User_CodeList0_HTTP_Handler(srv))
 	r.POST("/api/app_server/open_card", _User_OpenCard0_HTTP_Handler(srv))
+	r.POST("/api/app_server/check_card", _User_CheckCard0_HTTP_Handler(srv))
 	r.POST("/api/app_server/open_card_two", _User_OpenCardTwo0_HTTP_Handler(srv))
 	r.POST("/api/app_server/look_card", _User_LookCard0_HTTP_Handler(srv))
 	r.POST("/api/app_server/look_card_new", _User_LookCardNew0_HTTP_Handler(srv))
@@ -272,6 +275,28 @@ func _User_OpenCard0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) err
 	}
 }
 
+func _User_CheckCard0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CheckCardRequest
+		if err := ctx.Bind(&in.SendBody); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserCheckCard)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.CheckCard(ctx, req.(*CheckCardRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*CheckCardReply)
+		return ctx.Result(200, reply)
+	}
+}
+
 func _User_OpenCardTwo0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in OpenCardRequest
@@ -451,6 +476,7 @@ func _User_Withdraw0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) err
 type UserHTTPClient interface {
 	AmountTo(ctx context.Context, req *AmountToRequest, opts ...http.CallOption) (rsp *AmountToReply, err error)
 	AmountToCard(ctx context.Context, req *AmountToCardRequest, opts ...http.CallOption) (rsp *AmountToCardReply, err error)
+	CheckCard(ctx context.Context, req *CheckCardRequest, opts ...http.CallOption) (rsp *CheckCardReply, err error)
 	CodeList(ctx context.Context, req *CodeListRequest, opts ...http.CallOption) (rsp *CodeListReply, err error)
 	CreateNonce(ctx context.Context, req *CreateNonceRequest, opts ...http.CallOption) (rsp *CreateNonceReply, err error)
 	EthAuthorize(ctx context.Context, req *EthAuthorizeRequest, opts ...http.CallOption) (rsp *EthAuthorizeReply, err error)
@@ -494,6 +520,19 @@ func (c *UserHTTPClientImpl) AmountToCard(ctx context.Context, in *AmountToCardR
 	pattern := "/api/app_server/amount_to_card"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationUserAmountToCard))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in.SendBody, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *UserHTTPClientImpl) CheckCard(ctx context.Context, in *CheckCardRequest, opts ...http.CallOption) (*CheckCardReply, error) {
+	var out CheckCardReply
+	pattern := "/api/app_server/check_card"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserCheckCard))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in.SendBody, &out, opts...)
 	if err != nil {
