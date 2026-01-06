@@ -1087,6 +1087,10 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 		return &pb.OpenCardReply{Status: "用户不存在"}, nil
 	}
 
+	if 4 >= len(user.Pic) || 4 >= len(user.PicTwo) {
+		return &pb.OpenCardReply{Status: "先上传证件照片"}, nil
+	}
+
 	if 5 <= user.UserCount {
 		return &pb.OpenCardReply{Status: "提交已经5次。联系管理员"}, nil
 	}
