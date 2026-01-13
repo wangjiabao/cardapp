@@ -1102,6 +1102,10 @@ func (uuc *UserUseCase) CheckCard(ctx context.Context, req *pb.CheckCardRequest,
 			return &pb.CheckCardReply{Status: "卡号格式错误"}, nil
 		}
 
+		if 2 >= user.CardTwo {
+			return &pb.CheckCardReply{Status: "已经激活卡片"}, nil
+		}
+
 		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
 			err = uuc.repo.UpdateCardCardNumberRelTwo(ctx, userId, req.SendBody.Num)
 			if nil != err {
