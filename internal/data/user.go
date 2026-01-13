@@ -479,6 +479,20 @@ func (u *UserRepo) UpdateCardCardNumberRel(ctx context.Context, userId uint64, c
 	return nil
 }
 
+// UpdateCardCardNumberRelTwo .
+func (u *UserRepo) UpdateCardCardNumberRelTwo(ctx context.Context, userId uint64, cardNumberRel string) error {
+	res := u.data.DB(ctx).Table("user").Where("id=?", userId).
+		Updates(map[string]interface{}{
+			"card_number_rel_two": cardNumberRel,
+			"updated_at":          time.Now().Format("2006-01-02 15:04:05"),
+		})
+	if res.Error != nil || 0 >= res.RowsAffected {
+		return errors.New(500, "UPDATE_USER_ERROR", "用户信息修改失败")
+	}
+
+	return nil
+}
+
 // CreateCard .
 func (u *UserRepo) CreateCard(ctx context.Context, userId uint64, user *biz.User) error {
 	res := u.data.DB(ctx).Table("user").Where("id=?", userId).Where("amount>=?", user.Amount).Where("card_order_id=?", "no").
