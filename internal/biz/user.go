@@ -1102,7 +1102,7 @@ func (uuc *UserUseCase) CheckCard(ctx context.Context, req *pb.CheckCardRequest,
 			return &pb.CheckCardReply{Status: "卡号格式错误"}, nil
 		}
 
-		if 2 >= user.CardTwo {
+		if 2 == user.CardTwo {
 			return &pb.CheckCardReply{Status: "已经激活卡片"}, nil
 		}
 
