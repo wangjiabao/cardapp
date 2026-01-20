@@ -539,6 +539,103 @@ func (uuc *UserUseCase) OrderList(ctx context.Context, req *pb.OrderListRequest,
 	}, nil
 }
 
+func (uuc *UserUseCase) OrderListTwo(ctx context.Context, req *pb.OrderListTwoRequest, userId uint64) (*pb.OrderListTwoReply, error) {
+	res := make([]*pb.OrderListTwoReply_List, 0)
+
+	var (
+		user  *User
+		err   error
+		total uint64
+	)
+
+	user, err = uuc.repo.GetUserById(userId)
+	if nil == user || nil != err {
+		return &pb.OrderListTwoReply{Status: "查询错误", Count: 0,
+			List: res,
+		}, nil
+	}
+
+	if 1 == req.CardType {
+		if 10 > len(user.CardTwoNumber) {
+			return &pb.OrderListTwoReply{Status: "ok", Count: 0,
+				List: res,
+			}, nil
+		}
+
+		txs, totalTmp, errTwo := InterlaceListTransactions(ctx, &InterlaceTxnListReq{
+			AccountId: interlaceAccountId,
+			CardId:    user.CardTwoNumber,
+			Limit:     20,
+			Page:      int(req.Page),
+			Type:      "1",
+			// StartTime: "1735689600000",
+			// EndTime:   "1738272000000",
+		})
+		if errTwo != nil {
+			return &pb.OrderListTwoReply{Status: "ok", Count: 0,
+				List: res,
+			}, nil
+		}
+
+		total, _ = strconv.ParseUint(totalTmp, 10, 64)
+
+		if nil != txs {
+			for _, v := range txs {
+				res = append(res, &pb.OrderListTwoReply_List{
+					Timestamp:   v.CreateTime,
+					Status:      v.Status,
+					TradeAmount: v.TransactionAmount,
+					Remark:      v.Remark,
+					Detail:      v.Detail,
+					ServiceFee:  v.Fee,
+				})
+			}
+		}
+	} else {
+		if 10 > len(user.CardNumber) {
+			return &pb.OrderListTwoReply{Status: "ok", Count: 0,
+				List: res,
+			}, nil
+		}
+
+		txs, totalTmp, errTwo := InterlaceListTransactions(ctx, &InterlaceTxnListReq{
+			AccountId: interlaceAccountId,
+			CardId:    user.CardNumber,
+			Limit:     20,
+			Page:      int(req.Page),
+			Type:      "1",
+			// StartTime: "1735689600000",
+			// EndTime:   "1738272000000",
+		})
+		if errTwo != nil {
+			return &pb.OrderListTwoReply{Status: "ok", Count: 0,
+				List: res,
+			}, nil
+		}
+
+		total, _ = strconv.ParseUint(totalTmp, 10, 64)
+
+		if nil != txs {
+			for _, v := range txs {
+				res = append(res, &pb.OrderListTwoReply_List{
+					Timestamp:   v.CreateTime,
+					Status:      v.Status,
+					TradeAmount: v.TransactionAmount,
+					Remark:      v.Remark,
+					Detail:      v.Detail,
+					ServiceFee:  v.Fee,
+				})
+			}
+		}
+	}
+
+	return &pb.OrderListTwoReply{
+		Status: "ok",
+		Count:  total,
+		List:   res,
+	}, nil
+}
+
 func (uuc *UserUseCase) RecordList(ctx context.Context, req *pb.RecordListRequest, userId uint64) (*pb.RecordListReply, error) {
 	res := make([]*pb.RecordListReply_List, 0)
 
@@ -1151,9 +1248,9 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 		return &pb.OpenCardReply{Status: "用户不存在"}, nil
 	}
 
-	if 4 >= len(user.Pic) || 4 >= len(user.PicTwo) {
-		return &pb.OpenCardReply{Status: "先上传证件照片"}, nil
-	}
+	//if 4 >= len(user.Pic) || 4 >= len(user.PicTwo) {
+	//	return &pb.OpenCardReply{Status: "先上传证件照片"}, nil
+	//}
 
 	if 5 <= user.UserCount {
 		return &pb.OpenCardReply{Status: "提交已经5次。联系管理员"}, nil
@@ -1390,6 +1487,39 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 	return &pb.AmountToCardReply{
 		Status: "ok",
 	}, nil
+}
+
+func (uuc *UserUseCase) ChangePin(ctx context.Context, req *pb.ChangePinRequest, userId uint64) (*pb.ChangePinReply, error) {
+	var (
+		user *User
+		err  error
+	)
+	user, err = uuc.repo.GetUserById(userId)
+	if nil == user || nil != err {
+		return &pb.ChangePinReply{Status: "用户不存在"}, nil
+	}
+
+	// 冻结
+	if 1 == req.SendBody.CardType {
+		res, errTwo := InterlaceSetCardPin(ctx, user.CardTwoNumber, &InterlaceSetCardPinReq{
+			Pin:       req.SendBody.Pin,
+			AccountId: interlaceAccountId,
+		})
+		if !res || errTwo != nil {
+			return &pb.ChangePinReply{Status: "实体卡修改pin失败"}, nil
+		}
+
+	} else {
+		res, errTwo := InterlaceSetCardPin(ctx, user.CardNumber, &InterlaceSetCardPinReq{
+			Pin:       req.SendBody.Pin,
+			AccountId: interlaceAccountId,
+		})
+		if !res || errTwo != nil {
+			return &pb.ChangePinReply{Status: "虚拟卡修改pin失败"}, nil
+		}
+	}
+
+	return &pb.ChangePinReply{Status: "ok"}, nil
 }
 
 func (uuc *UserUseCase) LookCardNewTwo(ctx context.Context, req *pb.LookCardRequest, userId uint64) (*pb.LookCardReply, error) {
@@ -1689,6 +1819,8 @@ func (uuc *UserUseCase) Withdraw(ctx context.Context, req *pb.WithdrawRequest, u
 }
 
 func (uuc *UserUseCase) Upload(ctx transporthttp.Context) (err error) {
+
+	return nil
 
 	w := ctx.Response() // http.ResponseWriter
 	r := ctx.Request()  // *http.Request
@@ -3115,4 +3247,88 @@ func InterlaceFreezeCard(ctx context.Context, accountId, cardId string) (*Interl
 	}
 
 	return &outer.Data, nil
+}
+
+type InterlaceSetCardPinReq struct {
+	Pin       string `json:"pin"`       // 6位数字字符串
+	AccountId string `json:"accountId"` // 账户UUID
+}
+
+type InterlaceSetCardPinResp struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		Success bool `json:"success"`
+	} `json:"data"`
+}
+
+// InterlaceSetCardPin 设置卡片 PIN（交易PIN/ATM PIN）
+func InterlaceSetCardPin(ctx context.Context, cardId string, in *InterlaceSetCardPinReq) (bool, error) {
+	if cardId == "" {
+		return false, fmt.Errorf("cardId is required")
+	}
+	if in == nil {
+		return false, fmt.Errorf("set pin req is nil")
+	}
+	if in.AccountId == "" {
+		return false, fmt.Errorf("accountId is required")
+	}
+	if in.Pin == "" {
+		return false, fmt.Errorf("pin is required")
+	}
+	// 你如果想严格一点，可以只校验长度，不校验数字字符（按你风格）
+	if len(in.Pin) != 6 {
+		return false, fmt.Errorf("pin length must be 6")
+	}
+
+	accessToken, err := GetInterlaceAccessToken(ctx)
+	if err != nil || accessToken == "" {
+		fmt.Println("获取access token错误")
+		return false, err
+	}
+
+	// interlaceBaseURL 建议: https://api-sandbox.interlace.money/open-api/v3
+	base := interlaceBaseURL + "/cards/" + cardId + "/pin"
+
+	bodyBytes, err := json.Marshal(in)
+	if err != nil {
+		return false, fmt.Errorf("marshal set pin body: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-access-token", accessToken)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, err
+	}
+
+	fmt.Println("set-pin resp:", string(respBody))
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		fmt.Println("at", interlaceAuth, time.Now().Unix())
+		return false, fmt.Errorf("interlace set pin http %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	var outer InterlaceSetCardPinResp
+	if err := json.Unmarshal(respBody, &outer); err != nil {
+		return false, fmt.Errorf("set pin unmarshal: %w", err)
+	}
+	if outer.Code != "000000" {
+		return false, fmt.Errorf("set pin failed: code=%s msg=%s", outer.Code, outer.Message)
+	}
+
+	return outer.Data.Success, nil
 }

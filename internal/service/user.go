@@ -74,6 +74,23 @@ func (u *UserService) OrderList(ctx context.Context, req *pb.OrderListRequest) (
 	return u.uuc.OrderList(ctx, req, userId)
 }
 
+func (u *UserService) OrderListTwo(ctx context.Context, req *pb.OrderListTwoRequest) (*pb.OrderListTwoReply, error) {
+	// 在上下文 context 中取出 claims 对象
+	var userId uint64
+	if claims, ok := jwt.FromContext(ctx); ok {
+		c := claims.(jwt2.MapClaims)
+		if c["UserId"] == nil {
+			return &pb.OrderListTwoReply{
+				Status: "无效TOKEN",
+			}, nil
+		}
+
+		userId = uint64(c["UserId"].(float64))
+	}
+
+	return u.uuc.OrderListTwo(ctx, req, userId)
+}
+
 func (u *UserService) RecordList(ctx context.Context, req *pb.RecordListRequest) (*pb.RecordListReply, error) {
 	// 在上下文 context 中取出 claims 对象
 	var userId uint64
@@ -965,6 +982,76 @@ func (u *UserService) LookCardNewTwo(ctx context.Context, req *pb.LookCardReques
 	}
 
 	return u.uuc.LookCardNewTwo(ctx, req, userId)
+}
+
+func (u *UserService) ChangePin(ctx context.Context, req *pb.ChangePinRequest) (*pb.ChangePinReply, error) {
+	// 在上下文 context 中取出 claims 对象
+	var (
+		err    error
+		userId uint64
+	)
+
+	if claims, ok := jwt.FromContext(ctx); ok {
+		c := claims.(jwt2.MapClaims)
+		if c["UserId"] == nil {
+			return &pb.ChangePinReply{
+				Status: "无效TOKEN",
+			}, nil
+		}
+
+		userId = uint64(c["UserId"].(float64))
+	}
+
+	var (
+		user *biz.User
+	)
+	user, err = u.uuc.GetUserDataById(userId)
+	if nil != err {
+		return &pb.ChangePinReply{
+			Status: "无效TOKEN",
+		}, nil
+	}
+
+	if 1 == user.IsDelete {
+		return &pb.ChangePinReply{
+			Status: "用户已删除",
+		}, nil
+	}
+
+	var (
+		res             bool
+		addressFromSign string
+	)
+	if 10 >= len(req.SendBody.Sign) {
+		return &pb.ChangePinReply{
+			Status: "签名错误",
+		}, nil
+	}
+	var (
+		contentStr string
+	)
+
+	contentStr, err = u.uuc.GetAddressNonce(ctx, user.Address)
+	if nil != err {
+		return &pb.ChangePinReply{
+			Status: "错误",
+		}, nil
+	}
+	if 0 >= len(contentStr) {
+		return &pb.ChangePinReply{
+			Status: "错误nonce",
+		}, nil
+	}
+	content := []byte(contentStr)
+
+	res, addressFromSign = verifySig(req.SendBody.Sign, content)
+	if !res || addressFromSign != user.Address {
+		return &pb.ChangePinReply{
+			Status: "签名错误",
+		}, nil
+	}
+
+	return u.uuc.ChangePin(ctx, req, userId)
 }
 
 // Upload upload .

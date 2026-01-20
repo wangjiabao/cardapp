@@ -24,6 +24,7 @@ const (
 	User_GetUser_FullMethodName        = "/api.user.v1.User/GetUser"
 	User_UserRecommend_FullMethodName  = "/api.user.v1.User/UserRecommend"
 	User_OrderList_FullMethodName      = "/api.user.v1.User/OrderList"
+	User_OrderListTwo_FullMethodName   = "/api.user.v1.User/OrderListTwo"
 	User_RewardList_FullMethodName     = "/api.user.v1.User/RewardList"
 	User_RecordList_FullMethodName     = "/api.user.v1.User/RecordList"
 	User_CodeList_FullMethodName       = "/api.user.v1.User/CodeList"
@@ -33,6 +34,7 @@ const (
 	User_LookCard_FullMethodName       = "/api.user.v1.User/LookCard"
 	User_LookCardNew_FullMethodName    = "/api.user.v1.User/LookCardNew"
 	User_LookCardNewTwo_FullMethodName = "/api.user.v1.User/LookCardNewTwo"
+	User_ChangePin_FullMethodName      = "/api.user.v1.User/ChangePin"
 	User_AmountToCard_FullMethodName   = "/api.user.v1.User/AmountToCard"
 	User_SetVip_FullMethodName         = "/api.user.v1.User/SetVip"
 	User_AmountTo_FullMethodName       = "/api.user.v1.User/AmountTo"
@@ -51,6 +53,7 @@ type UserClient interface {
 	UserRecommend(ctx context.Context, in *RecommendListRequest, opts ...grpc.CallOption) (*RecommendListReply, error)
 	// 账单列表
 	OrderList(ctx context.Context, in *OrderListRequest, opts ...grpc.CallOption) (*OrderListReply, error)
+	OrderListTwo(ctx context.Context, in *OrderListTwoRequest, opts ...grpc.CallOption) (*OrderListTwoReply, error)
 	// 明细列表
 	RewardList(ctx context.Context, in *RewardListRequest, opts ...grpc.CallOption) (*RewardListReply, error)
 	// 明细列表
@@ -67,6 +70,7 @@ type UserClient interface {
 	LookCardNew(ctx context.Context, in *LookCardRequest, opts ...grpc.CallOption) (*LookCardReply, error)
 	// 补卡
 	LookCardNewTwo(ctx context.Context, in *LookCardRequest, opts ...grpc.CallOption) (*LookCardReply, error)
+	ChangePin(ctx context.Context, in *ChangePinRequest, opts ...grpc.CallOption) (*ChangePinReply, error)
 	// 划转
 	AmountToCard(ctx context.Context, in *AmountToCardRequest, opts ...grpc.CallOption) (*AmountToCardReply, error)
 	// 设置级别给下级
@@ -124,6 +128,15 @@ func (c *userClient) UserRecommend(ctx context.Context, in *RecommendListRequest
 func (c *userClient) OrderList(ctx context.Context, in *OrderListRequest, opts ...grpc.CallOption) (*OrderListReply, error) {
 	out := new(OrderListReply)
 	err := c.cc.Invoke(ctx, User_OrderList_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) OrderListTwo(ctx context.Context, in *OrderListTwoRequest, opts ...grpc.CallOption) (*OrderListTwoReply, error) {
+	out := new(OrderListTwoReply)
+	err := c.cc.Invoke(ctx, User_OrderListTwo_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -211,6 +224,15 @@ func (c *userClient) LookCardNewTwo(ctx context.Context, in *LookCardRequest, op
 	return out, nil
 }
 
+func (c *userClient) ChangePin(ctx context.Context, in *ChangePinRequest, opts ...grpc.CallOption) (*ChangePinReply, error) {
+	out := new(ChangePinReply)
+	err := c.cc.Invoke(ctx, User_ChangePin_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userClient) AmountToCard(ctx context.Context, in *AmountToCardRequest, opts ...grpc.CallOption) (*AmountToCardReply, error) {
 	out := new(AmountToCardReply)
 	err := c.cc.Invoke(ctx, User_AmountToCard_FullMethodName, in, out, opts...)
@@ -259,6 +281,7 @@ type UserServer interface {
 	UserRecommend(context.Context, *RecommendListRequest) (*RecommendListReply, error)
 	// 账单列表
 	OrderList(context.Context, *OrderListRequest) (*OrderListReply, error)
+	OrderListTwo(context.Context, *OrderListTwoRequest) (*OrderListTwoReply, error)
 	// 明细列表
 	RewardList(context.Context, *RewardListRequest) (*RewardListReply, error)
 	// 明细列表
@@ -275,6 +298,7 @@ type UserServer interface {
 	LookCardNew(context.Context, *LookCardRequest) (*LookCardReply, error)
 	// 补卡
 	LookCardNewTwo(context.Context, *LookCardRequest) (*LookCardReply, error)
+	ChangePin(context.Context, *ChangePinRequest) (*ChangePinReply, error)
 	// 划转
 	AmountToCard(context.Context, *AmountToCardRequest) (*AmountToCardReply, error)
 	// 设置级别给下级
@@ -305,6 +329,9 @@ func (UnimplementedUserServer) UserRecommend(context.Context, *RecommendListRequ
 func (UnimplementedUserServer) OrderList(context.Context, *OrderListRequest) (*OrderListReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OrderList not implemented")
 }
+func (UnimplementedUserServer) OrderListTwo(context.Context, *OrderListTwoRequest) (*OrderListTwoReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OrderListTwo not implemented")
+}
 func (UnimplementedUserServer) RewardList(context.Context, *RewardListRequest) (*RewardListReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RewardList not implemented")
 }
@@ -331,6 +358,9 @@ func (UnimplementedUserServer) LookCardNew(context.Context, *LookCardRequest) (*
 }
 func (UnimplementedUserServer) LookCardNewTwo(context.Context, *LookCardRequest) (*LookCardReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LookCardNewTwo not implemented")
+}
+func (UnimplementedUserServer) ChangePin(context.Context, *ChangePinRequest) (*ChangePinReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangePin not implemented")
 }
 func (UnimplementedUserServer) AmountToCard(context.Context, *AmountToCardRequest) (*AmountToCardReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AmountToCard not implemented")
@@ -443,6 +473,24 @@ func _User_OrderList_Handler(srv interface{}, ctx context.Context, dec func(inte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServer).OrderList(ctx, req.(*OrderListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_OrderListTwo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OrderListTwoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).OrderListTwo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_OrderListTwo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).OrderListTwo(ctx, req.(*OrderListTwoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -609,6 +657,24 @@ func _User_LookCardNewTwo_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_ChangePin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangePinRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).ChangePin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_ChangePin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).ChangePin(ctx, req.(*ChangePinRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _User_AmountToCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AmountToCardRequest)
 	if err := dec(in); err != nil {
@@ -709,6 +775,10 @@ var User_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _User_OrderList_Handler,
 		},
 		{
+			MethodName: "OrderListTwo",
+			Handler:    _User_OrderListTwo_Handler,
+		},
+		{
 			MethodName: "RewardList",
 			Handler:    _User_RewardList_Handler,
 		},
@@ -743,6 +813,10 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LookCardNewTwo",
 			Handler:    _User_LookCardNewTwo_Handler,
+		},
+		{
+			MethodName: "ChangePin",
+			Handler:    _User_ChangePin_Handler,
 		},
 		{
 			MethodName: "AmountToCard",

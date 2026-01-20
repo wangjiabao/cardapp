@@ -21,6 +21,7 @@ const _ = http.SupportPackageIsVersion1
 
 const OperationUserAmountTo = "/api.user.v1.User/AmountTo"
 const OperationUserAmountToCard = "/api.user.v1.User/AmountToCard"
+const OperationUserChangePin = "/api.user.v1.User/ChangePin"
 const OperationUserCheckCard = "/api.user.v1.User/CheckCard"
 const OperationUserCodeList = "/api.user.v1.User/CodeList"
 const OperationUserCreateNonce = "/api.user.v1.User/CreateNonce"
@@ -32,6 +33,7 @@ const OperationUserLookCardNewTwo = "/api.user.v1.User/LookCardNewTwo"
 const OperationUserOpenCard = "/api.user.v1.User/OpenCard"
 const OperationUserOpenCardTwo = "/api.user.v1.User/OpenCardTwo"
 const OperationUserOrderList = "/api.user.v1.User/OrderList"
+const OperationUserOrderListTwo = "/api.user.v1.User/OrderListTwo"
 const OperationUserRecordList = "/api.user.v1.User/RecordList"
 const OperationUserRewardList = "/api.user.v1.User/RewardList"
 const OperationUserSetVip = "/api.user.v1.User/SetVip"
@@ -43,6 +45,7 @@ type UserHTTPServer interface {
 	AmountTo(context.Context, *AmountToRequest) (*AmountToReply, error)
 	// AmountToCard 划转
 	AmountToCard(context.Context, *AmountToCardRequest) (*AmountToCardReply, error)
+	ChangePin(context.Context, *ChangePinRequest) (*ChangePinReply, error)
 	CheckCard(context.Context, *CheckCardRequest) (*CheckCardReply, error)
 	// CodeList 明细列表
 	CodeList(context.Context, *CodeListRequest) (*CodeListReply, error)
@@ -61,6 +64,7 @@ type UserHTTPServer interface {
 	OpenCardTwo(context.Context, *OpenCardRequest) (*OpenCardReply, error)
 	// OrderList 账单列表
 	OrderList(context.Context, *OrderListRequest) (*OrderListReply, error)
+	OrderListTwo(context.Context, *OrderListTwoRequest) (*OrderListTwoReply, error)
 	// RecordList 明细列表
 	RecordList(context.Context, *RecordListRequest) (*RecordListReply, error)
 	// RewardList 明细列表
@@ -80,6 +84,7 @@ func RegisterUserHTTPServer(s *http.Server, srv UserHTTPServer) {
 	r.GET("/api/app_server/user", _User_GetUser0_HTTP_Handler(srv))
 	r.GET("/api/app_server/recommend_list", _User_UserRecommend0_HTTP_Handler(srv))
 	r.GET("/api/app_server/order_list", _User_OrderList0_HTTP_Handler(srv))
+	r.GET("/api/app_server/order_list_new", _User_OrderListTwo0_HTTP_Handler(srv))
 	r.GET("/api/app_server/reward_list", _User_RewardList0_HTTP_Handler(srv))
 	r.GET("/api/app_server/record_list", _User_RecordList0_HTTP_Handler(srv))
 	r.GET("/api/app_server/code_list", _User_CodeList0_HTTP_Handler(srv))
@@ -89,6 +94,7 @@ func RegisterUserHTTPServer(s *http.Server, srv UserHTTPServer) {
 	r.POST("/api/app_server/look_card", _User_LookCard0_HTTP_Handler(srv))
 	r.POST("/api/app_server/look_card_new", _User_LookCardNew0_HTTP_Handler(srv))
 	r.POST("/api/app_server/change_card", _User_LookCardNewTwo0_HTTP_Handler(srv))
+	r.POST("/api/app_server/change_pin", _User_ChangePin0_HTTP_Handler(srv))
 	r.POST("/api/app_server/amount_to_card", _User_AmountToCard0_HTTP_Handler(srv))
 	r.POST("/api/app_server/set_vip", _User_SetVip0_HTTP_Handler(srv))
 	r.POST("/api/app_server/amount_to", _User_AmountTo0_HTTP_Handler(srv))
@@ -192,6 +198,25 @@ func _User_OrderList0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) er
 			return err
 		}
 		reply := out.(*OrderListReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _User_OrderListTwo0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in OrderListTwoRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserOrderListTwo)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.OrderListTwo(ctx, req.(*OrderListTwoRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*OrderListTwoReply)
 		return ctx.Result(200, reply)
 	}
 }
@@ -385,6 +410,28 @@ func _User_LookCardNewTwo0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Contex
 	}
 }
 
+func _User_ChangePin0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ChangePinRequest
+		if err := ctx.Bind(&in.SendBody); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserChangePin)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ChangePin(ctx, req.(*ChangePinRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ChangePinReply)
+		return ctx.Result(200, reply)
+	}
+}
+
 func _User_AmountToCard0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in AmountToCardRequest
@@ -476,6 +523,7 @@ func _User_Withdraw0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) err
 type UserHTTPClient interface {
 	AmountTo(ctx context.Context, req *AmountToRequest, opts ...http.CallOption) (rsp *AmountToReply, err error)
 	AmountToCard(ctx context.Context, req *AmountToCardRequest, opts ...http.CallOption) (rsp *AmountToCardReply, err error)
+	ChangePin(ctx context.Context, req *ChangePinRequest, opts ...http.CallOption) (rsp *ChangePinReply, err error)
 	CheckCard(ctx context.Context, req *CheckCardRequest, opts ...http.CallOption) (rsp *CheckCardReply, err error)
 	CodeList(ctx context.Context, req *CodeListRequest, opts ...http.CallOption) (rsp *CodeListReply, err error)
 	CreateNonce(ctx context.Context, req *CreateNonceRequest, opts ...http.CallOption) (rsp *CreateNonceReply, err error)
@@ -487,6 +535,7 @@ type UserHTTPClient interface {
 	OpenCard(ctx context.Context, req *OpenCardRequest, opts ...http.CallOption) (rsp *OpenCardReply, err error)
 	OpenCardTwo(ctx context.Context, req *OpenCardRequest, opts ...http.CallOption) (rsp *OpenCardReply, err error)
 	OrderList(ctx context.Context, req *OrderListRequest, opts ...http.CallOption) (rsp *OrderListReply, err error)
+	OrderListTwo(ctx context.Context, req *OrderListTwoRequest, opts ...http.CallOption) (rsp *OrderListTwoReply, err error)
 	RecordList(ctx context.Context, req *RecordListRequest, opts ...http.CallOption) (rsp *RecordListReply, err error)
 	RewardList(ctx context.Context, req *RewardListRequest, opts ...http.CallOption) (rsp *RewardListReply, err error)
 	SetVip(ctx context.Context, req *SetVipRequest, opts ...http.CallOption) (rsp *SetVipReply, err error)
@@ -520,6 +569,19 @@ func (c *UserHTTPClientImpl) AmountToCard(ctx context.Context, in *AmountToCardR
 	pattern := "/api/app_server/amount_to_card"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationUserAmountToCard))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in.SendBody, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *UserHTTPClientImpl) ChangePin(ctx context.Context, in *ChangePinRequest, opts ...http.CallOption) (*ChangePinReply, error) {
+	var out ChangePinReply
+	pattern := "/api/app_server/change_pin"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserChangePin))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in.SendBody, &out, opts...)
 	if err != nil {
@@ -663,6 +725,19 @@ func (c *UserHTTPClientImpl) OrderList(ctx context.Context, in *OrderListRequest
 	pattern := "/api/app_server/order_list"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationUserOrderList))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *UserHTTPClientImpl) OrderListTwo(ctx context.Context, in *OrderListTwoRequest, opts ...http.CallOption) (*OrderListTwoReply, error) {
+	var out OrderListTwoReply
+	pattern := "/api/app_server/order_list_new"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserOrderListTwo))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

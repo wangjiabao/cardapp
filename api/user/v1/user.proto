@@ -44,6 +44,12 @@ service User {
 		};
 	};
 
+	rpc OrderListTwo (OrderListTwoRequest) returns (OrderListTwoReply) {
+		option (google.api.http) = {
+			get: "/api/app_server/order_list_new"
+		};
+	};
+
 	// 明细列表
 	rpc RewardList (RewardListRequest) returns (RewardListReply) {
 		option (google.api.http) = {
@@ -107,6 +113,13 @@ service User {
 	rpc LookCardNewTwo (LookCardRequest) returns (LookCardReply) {
 		option (google.api.http) = {
 			post: "/api/app_server/change_card"
+			body: "send_body"
+		};
+	};
+
+	rpc ChangePin (ChangePinRequest) returns (ChangePinReply) {
+		option (google.api.http) = {
+			post: "/api/app_server/change_pin"
 			body: "send_body"
 		};
 	};
@@ -265,6 +278,20 @@ message LookCardReply {
 	string accessToken = 2;
 }
 
+message ChangePinRequest {
+	message SendBody {
+		string sign = 1;
+		uint64 cardType = 2; // 虚拟卡0 实体卡1
+		string pin = 3;
+	}
+
+	SendBody send_body = 1;
+}
+
+message ChangePinReply {
+	string status = 1;
+}
+
 message AmountToCardRequest {
 	message SendBody {
 		string sign = 1;
@@ -386,5 +413,24 @@ message OrderListReply {
 		string tradeDescription = 4; // 交易描述
 		string currentBalance = 7; // 当前余额
 		string traderNum = 9; // 交易订单号
+	}
+}
+
+message OrderListTwoRequest {
+	uint64 page = 1; // 页数
+	uint64 cardType = 2;
+}
+
+message OrderListTwoReply {
+	string status = 1;
+	uint64 count = 2; // 总数，每页20
+	repeated List list = 3;
+	message List {
+		string timestamp = 1; // 交易完成时间
+		string status = 8; // 交易状态 完成CLOSED, 处理中PENDING, 失败FAIL
+		string tradeAmount = 2; // 交易金额
+		string remark = 5; // 交易失败原因
+		string detail = 6; // 细节描述
+		string serviceFee = 3; // 手续费
 	}
 }

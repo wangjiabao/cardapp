@@ -81,6 +81,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /api/app_server/change_pin:
+        post:
+            tags:
+                - User
+            operationId: User_ChangePin
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ChangePinRequest_SendBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ChangePinReply'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /api/app_server/check_card:
         post:
             tags:
@@ -308,6 +332,33 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /api/app_server/order_list_new:
+        get:
+            tags:
+                - User
+            operationId: User_OrderListTwo
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: string
+                - name: cardType
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/OrderListTwoReply'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /api/app_server/recommend_list:
         get:
             tags:
@@ -486,6 +537,20 @@ components:
                 amount:
                     type: string
                 address:
+                    type: string
+        ChangePinReply:
+            type: object
+            properties:
+                status:
+                    type: string
+        ChangePinRequest_SendBody:
+            type: object
+            properties:
+                sign:
+                    type: string
+                cardType:
+                    type: string
+                pin:
                     type: string
         CheckCardReply:
             type: object
@@ -674,6 +739,32 @@ components:
                 currentBalance:
                     type: string
                 traderNum:
+                    type: string
+        OrderListTwoReply:
+            type: object
+            properties:
+                status:
+                    type: string
+                count:
+                    type: string
+                list:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/OrderListTwoReply_List'
+        OrderListTwoReply_List:
+            type: object
+            properties:
+                timestamp:
+                    type: string
+                status:
+                    type: string
+                tradeAmount:
+                    type: string
+                remark:
+                    type: string
+                detail:
+                    type: string
+                serviceFee:
                     type: string
         RecommendListReply:
             type: object
