@@ -919,7 +919,7 @@ func (u *UserRepo) Withdraw(ctx context.Context, userId uint64, amount, amountRe
 }
 
 // GetUserRewardByUserIdPage .
-func (u *UserRepo) GetUserRewardByUserIdPage(ctx context.Context, b *biz.Pagination, userId uint64, reason uint64) ([]*biz.Reward, error, int64) {
+func (u *UserRepo) GetUserRewardByUserIdPage(ctx context.Context, b *biz.Pagination, userId uint64, reason uint64, cardType uint64) ([]*biz.Reward, error, int64) {
 	var (
 		count   int64
 		rewards []*Reward
@@ -930,6 +930,13 @@ func (u *UserRepo) GetUserRewardByUserIdPage(ctx context.Context, b *biz.Paginat
 	instance := u.data.db.Where("user_id", userId).Table("reward").Order("id desc")
 	if 0 < reason {
 		instance = instance.Where("reason=?", reason)
+		if 4 == reason {
+			if 1 == cardType {
+				instance = instance.Where("one=?", 1)
+			} else if 0 == cardType {
+				instance = instance.Where("one=?", 0)
+			}
+		}
 	}
 
 	instance = instance.Count(&count)

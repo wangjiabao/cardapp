@@ -149,7 +149,7 @@ type UserRepo interface {
 	AmountToCardReward(ctx context.Context, userId uint64, amount float64, orderId string, rewardId uint64, one uint64) error
 	AmountTo(ctx context.Context, userId, toUserId uint64, toAddress string, amount float64) error
 	Withdraw(ctx context.Context, userId uint64, amount, amountRel float64, address string) error
-	GetUserRewardByUserIdPage(ctx context.Context, b *Pagination, userId uint64, reason uint64) ([]*Reward, error, int64)
+	GetUserRewardByUserIdPage(ctx context.Context, b *Pagination, userId uint64, reason uint64, cardType uint64) ([]*Reward, error, int64)
 	GetUserRecordByUserIdPage(ctx context.Context, b *Pagination, userId uint64) ([]*CardRecord, error, int64)
 	SetVip(ctx context.Context, userId uint64, vip uint64) error
 	GetUsersOpenCard() ([]*User, error)
@@ -594,7 +594,7 @@ func (uuc *UserUseCase) RewardList(ctx context.Context, req *pb.RewardListReques
 	userRewards, err, count = uuc.repo.GetUserRewardByUserIdPage(ctx, &Pagination{
 		PageNum:  int(req.Page),
 		PageSize: 20,
-	}, userId, req.ReqType)
+	}, userId, req.ReqType, req.CardType)
 	if nil != err {
 		return &pb.RewardListReply{
 			Status: "ok",

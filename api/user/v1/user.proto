@@ -354,6 +354,7 @@ message CodeListReply {
 message RewardListRequest {
 	uint64 page = 1; // 页数
 	uint64 reqType = 2; // 类型：1充值，2提现，3开卡，4划转，5转账，6vip收益
+	uint64 cardType = 3;
 }
 
 message RewardListReply {
