@@ -185,6 +185,7 @@ func (uuc *UserUseCase) GetUserById(ctx context.Context, userId uint64) (*pb.Get
 		myUserRecommendAddress string
 		err                    error
 		withdrawRate           float64
+		amountToRate           float64
 		cardTwo                string
 	)
 
@@ -199,7 +200,9 @@ func (uuc *UserUseCase) GetUserById(ctx context.Context, userId uint64) (*pb.Get
 			if "withdraw_rate" == vConfig.KeyName {
 				withdrawRate, _ = strconv.ParseFloat(vConfig.Value, 10)
 			}
-
+			if "amount_to_rate" == vConfig.KeyName {
+				amountToRate, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
 			if "card_two" == vConfig.KeyName {
 				cardTwo = vConfig.Value
 			}
@@ -298,6 +301,7 @@ func (uuc *UserUseCase) GetUserById(ctx context.Context, userId uint64) (*pb.Get
 		CardAmountTwo:    cardAmountTwo,
 		PicTwo:           "/images/" + user.PicTwo,
 		Pic:              "/images/" + user.Pic,
+		AmountToRate:     amountToRate,
 	}, nil
 }
 

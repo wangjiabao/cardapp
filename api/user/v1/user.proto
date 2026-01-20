@@ -200,6 +200,7 @@ message GetUserReply {
 	string cardAmount = 7; // 我的卡额度
 	string recommendAddress = 8; // 我的推荐人
 	double withdrawRate = 10;
+	double amountToRate = 19;
 	uint64 canVip = 12;
 	uint64 vipThree = 13;
 	string cardTwo = 14;
