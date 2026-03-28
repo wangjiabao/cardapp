@@ -1034,3 +1034,37 @@ func (u *UserRepo) GetUserCodePage(ctx context.Context, b *biz.Pagination, card 
 
 	return res, nil, count
 }
+
+// GetUserCodePage .
+func (u *UserRepo) GetCodePage(ctx context.Context, b *biz.Pagination) ([]*biz.CardOrder, error, int64) {
+	var (
+		count   int64
+		rewards []*CardOrder
+	)
+
+	res := make([]*biz.CardOrder, 0)
+
+	instance := u.data.db.Table("card_code_two").Order("id desc")
+
+	instance = instance.Count(&count)
+
+	if err := instance.Scopes(Paginate(b.PageNum, b.PageSize)).Find(&rewards).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return res, errors.NotFound("REWARD_NOT_FOUND", "reward not found"), 0
+		}
+
+		return nil, errors.New(500, "REWARD ERROR", err.Error()), 0
+	}
+
+	for _, reward := range rewards {
+		res = append(res, &biz.CardOrder{
+			ID:   reward.ID,
+			Last: reward.Last,
+			Code: reward.Code,
+			Card: reward.Card,
+			Time: reward.Time,
+		})
+	}
+
+	return res, nil, count
+}

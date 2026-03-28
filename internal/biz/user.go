@@ -160,6 +160,7 @@ type UserRepo interface {
 	UploadCardOneLock(ctx context.Context, userId uint64) error
 	UploadCardTwoLock(ctx context.Context, userId uint64) error
 	GetUserCodePage(ctx context.Context, b *Pagination, card string) ([]*CardOrder, error, int64)
+	GetCodePage(ctx context.Context, b *Pagination) ([]*CardOrder, error, int64)
 }
 
 type UserUseCase struct {
@@ -1721,6 +1722,60 @@ func (uuc *UserUseCase) CodeList(ctx context.Context, req *pb.CodeListRequest, u
 		PageNum:  int(req.Page),
 		PageSize: 20,
 	}, cardNum)
+	if nil != err {
+		return &pb.CodeListReply{
+			Status: "ok",
+			Count:  uint64(count),
+			List:   res,
+		}, err
+	}
+
+	for _, v := range codeList {
+		res = append(res, &pb.CodeListReply_List{
+			CreatedAt: v.Time.Add(8 * time.Hour).Format("2006-01-02 15:04:05"),
+			Code:      v.Code,
+		})
+	}
+
+	return &pb.CodeListReply{List: res, Count: uint64(count), Status: "ok"}, nil
+}
+
+func (uuc *UserUseCase) CodeListTwo(ctx context.Context, req *pb.CodeListRequest, userId uint64) (*pb.CodeListReply, error) {
+	res := make([]*pb.CodeListReply_List, 0)
+
+	var (
+		//user     *User
+		err      error
+		count    int64
+		codeList []*CardOrder
+	)
+	//user, err = uuc.repo.GetUserById(userId)
+	//if nil == user || nil != err {
+	//	return &pb.CodeListReply{Status: "用户不存在"}, nil
+	//}
+
+	//if 2 == req.Num {
+	//	if 5 < len(user.CardNumberRelTwo) {
+	//		cardNum = MaskCard8_6_4(user.CardNumberRelTwo)
+	//	}
+	//} else {
+	//	if 5 < len(user.CardNumberRel) {
+	//		cardNum = MaskCard8_6_4(user.CardNumberRel)
+	//	}
+	//}
+
+	//if 5 >= len(cardNum) {
+	//	return &pb.CodeListReply{
+	//		Status: "ok",
+	//		Count:  uint64(count),
+	//		List:   res,
+	//	}, err
+	//}
+
+	codeList, err, count = uuc.repo.GetCodePage(ctx, &Pagination{
+		PageNum:  int(req.Page),
+		PageSize: 20,
+	})
 	if nil != err {
 		return &pb.CodeListReply{
 			Status: "ok",
