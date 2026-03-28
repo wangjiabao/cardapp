@@ -24,6 +24,7 @@ const OperationUserAmountToCard = "/api.user.v1.User/AmountToCard"
 const OperationUserChangePin = "/api.user.v1.User/ChangePin"
 const OperationUserCheckCard = "/api.user.v1.User/CheckCard"
 const OperationUserCodeList = "/api.user.v1.User/CodeList"
+const OperationUserCodeListTwo = "/api.user.v1.User/CodeListTwo"
 const OperationUserCreateNonce = "/api.user.v1.User/CreateNonce"
 const OperationUserEthAuthorize = "/api.user.v1.User/EthAuthorize"
 const OperationUserGetUser = "/api.user.v1.User/GetUser"
@@ -49,6 +50,8 @@ type UserHTTPServer interface {
 	CheckCard(context.Context, *CheckCardRequest) (*CheckCardReply, error)
 	// CodeList 明细列表
 	CodeList(context.Context, *CodeListRequest) (*CodeListReply, error)
+	// CodeListTwo 明细列表
+	CodeListTwo(context.Context, *CodeListRequest) (*CodeListReply, error)
 	CreateNonce(context.Context, *CreateNonceRequest) (*CreateNonceReply, error)
 	EthAuthorize(context.Context, *EthAuthorizeRequest) (*EthAuthorizeReply, error)
 	// GetUser 个人信息
@@ -88,6 +91,7 @@ func RegisterUserHTTPServer(s *http.Server, srv UserHTTPServer) {
 	r.GET("/api/app_server/reward_list", _User_RewardList0_HTTP_Handler(srv))
 	r.GET("/api/app_server/record_list", _User_RecordList0_HTTP_Handler(srv))
 	r.GET("/api/app_server/code_list", _User_CodeList0_HTTP_Handler(srv))
+	r.GET("/api/app_server/code_list_two", _User_CodeListTwo0_HTTP_Handler(srv))
 	r.POST("/api/app_server/open_card", _User_OpenCard0_HTTP_Handler(srv))
 	r.POST("/api/app_server/check_card", _User_CheckCard0_HTTP_Handler(srv))
 	r.POST("/api/app_server/open_card_two", _User_OpenCardTwo0_HTTP_Handler(srv))
@@ -268,6 +272,25 @@ func _User_CodeList0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) err
 		http.SetOperation(ctx, OperationUserCodeList)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
 			return srv.CodeList(ctx, req.(*CodeListRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*CodeListReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _User_CodeListTwo0_HTTP_Handler(srv UserHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CodeListRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserCodeListTwo)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.CodeListTwo(ctx, req.(*CodeListRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
@@ -526,6 +549,7 @@ type UserHTTPClient interface {
 	ChangePin(ctx context.Context, req *ChangePinRequest, opts ...http.CallOption) (rsp *ChangePinReply, err error)
 	CheckCard(ctx context.Context, req *CheckCardRequest, opts ...http.CallOption) (rsp *CheckCardReply, err error)
 	CodeList(ctx context.Context, req *CodeListRequest, opts ...http.CallOption) (rsp *CodeListReply, err error)
+	CodeListTwo(ctx context.Context, req *CodeListRequest, opts ...http.CallOption) (rsp *CodeListReply, err error)
 	CreateNonce(ctx context.Context, req *CreateNonceRequest, opts ...http.CallOption) (rsp *CreateNonceReply, err error)
 	EthAuthorize(ctx context.Context, req *EthAuthorizeRequest, opts ...http.CallOption) (rsp *EthAuthorizeReply, err error)
 	GetUser(ctx context.Context, req *GetUserRequest, opts ...http.CallOption) (rsp *GetUserReply, err error)
@@ -608,6 +632,19 @@ func (c *UserHTTPClientImpl) CodeList(ctx context.Context, in *CodeListRequest, 
 	pattern := "/api/app_server/code_list"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationUserCodeList))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *UserHTTPClientImpl) CodeListTwo(ctx context.Context, in *CodeListRequest, opts ...http.CallOption) (*CodeListReply, error) {
+	var out CodeListReply
+	pattern := "/api/app_server/code_list_two"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserCodeListTwo))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

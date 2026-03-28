@@ -3349,7 +3349,7 @@ var file_api_user_v1_user_proto_rawDesc = []byte{
 	0x16, 0x0a, 0x06, 0x64, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52,
 	0x06, 0x64, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x12, 0x1e, 0x0a, 0x0a, 0x73, 0x65, 0x72, 0x76, 0x69,
 	0x63, 0x65, 0x46, 0x65, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x73, 0x65, 0x72,
-	0x76, 0x69, 0x63, 0x65, 0x46, 0x65, 0x65, 0x32, 0xbe, 0x12, 0x0a, 0x04, 0x55, 0x73, 0x65, 0x72,
+	0x76, 0x69, 0x63, 0x65, 0x46, 0x65, 0x65, 0x32, 0xae, 0x13, 0x0a, 0x04, 0x55, 0x73, 0x65, 0x72,
 	0x12, 0x7e, 0x0a, 0x0b, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4e, 0x6f, 0x6e, 0x63, 0x65, 0x12,
 	0x1f, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x75, 0x73, 0x65, 0x72, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72,
 	0x65, 0x61, 0x74, 0x65, 0x4e, 0x6f, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
@@ -3415,7 +3415,14 @@ var file_api_user_v1_user_proto_rawDesc = []byte{
 	0x72, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6f, 0x64, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x70,
 	0x6c, 0x79, 0x22, 0x21, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1b, 0x12, 0x19, 0x2f, 0x61, 0x70, 0x69,
 	0x2f, 0x61, 0x70, 0x70, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2f, 0x63, 0x6f, 0x64, 0x65,
-	0x5f, 0x6c, 0x69, 0x73, 0x74, 0x12, 0x72, 0x0a, 0x08, 0x4f, 0x70, 0x65, 0x6e, 0x43, 0x61, 0x72,
+	0x5f, 0x6c, 0x69, 0x73, 0x74, 0x12, 0x6e, 0x0a, 0x0b, 0x43, 0x6f, 0x64, 0x65, 0x4c, 0x69, 0x73,
+	0x74, 0x54, 0x77, 0x6f, 0x12, 0x1c, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x75, 0x73, 0x65, 0x72, 0x2e,
+	0x76, 0x31, 0x2e, 0x43, 0x6f, 0x64, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x1a, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x75, 0x73, 0x65, 0x72, 0x2e, 0x76, 0x31,
+	0x2e, 0x43, 0x6f, 0x64, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x22, 0x25,
+	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1f, 0x12, 0x1d, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x61, 0x70, 0x70,
+	0x5f, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2f, 0x63, 0x6f, 0x64, 0x65, 0x5f, 0x6c, 0x69, 0x73,
+	0x74, 0x5f, 0x74, 0x77, 0x6f, 0x12, 0x72, 0x0a, 0x08, 0x4f, 0x70, 0x65, 0x6e, 0x43, 0x61, 0x72,
 	0x64, 0x12, 0x1c, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x75, 0x73, 0x65, 0x72, 0x2e, 0x76, 0x31, 0x2e,
 	0x4f, 0x70, 0x65, 0x6e, 0x43, 0x61, 0x72, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
 	0x1a, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x75, 0x73, 0x65, 0x72, 0x2e, 0x76, 0x31, 0x2e, 0x4f, 0x70,
@@ -3594,39 +3601,41 @@ var file_api_user_v1_user_proto_depIdxs = []int32{
 	28, // 22: api.user.v1.User.RewardList:input_type -> api.user.v1.RewardListRequest
 	24, // 23: api.user.v1.User.RecordList:input_type -> api.user.v1.RecordListRequest
 	26, // 24: api.user.v1.User.CodeList:input_type -> api.user.v1.CodeListRequest
-	8,  // 25: api.user.v1.User.OpenCard:input_type -> api.user.v1.OpenCardRequest
-	10, // 26: api.user.v1.User.CheckCard:input_type -> api.user.v1.CheckCardRequest
-	8,  // 27: api.user.v1.User.OpenCardTwo:input_type -> api.user.v1.OpenCardRequest
-	12, // 28: api.user.v1.User.LookCard:input_type -> api.user.v1.LookCardRequest
-	12, // 29: api.user.v1.User.LookCardNew:input_type -> api.user.v1.LookCardRequest
-	12, // 30: api.user.v1.User.LookCardNewTwo:input_type -> api.user.v1.LookCardRequest
-	14, // 31: api.user.v1.User.ChangePin:input_type -> api.user.v1.ChangePinRequest
-	16, // 32: api.user.v1.User.AmountToCard:input_type -> api.user.v1.AmountToCardRequest
-	18, // 33: api.user.v1.User.SetVip:input_type -> api.user.v1.SetVipRequest
-	20, // 34: api.user.v1.User.AmountTo:input_type -> api.user.v1.AmountToRequest
-	22, // 35: api.user.v1.User.Withdraw:input_type -> api.user.v1.WithdrawRequest
-	1,  // 36: api.user.v1.User.CreateNonce:output_type -> api.user.v1.CreateNonceReply
-	3,  // 37: api.user.v1.User.EthAuthorize:output_type -> api.user.v1.EthAuthorizeReply
-	5,  // 38: api.user.v1.User.GetUser:output_type -> api.user.v1.GetUserReply
-	7,  // 39: api.user.v1.User.UserRecommend:output_type -> api.user.v1.RecommendListReply
-	31, // 40: api.user.v1.User.OrderList:output_type -> api.user.v1.OrderListReply
-	33, // 41: api.user.v1.User.OrderListTwo:output_type -> api.user.v1.OrderListTwoReply
-	29, // 42: api.user.v1.User.RewardList:output_type -> api.user.v1.RewardListReply
-	25, // 43: api.user.v1.User.RecordList:output_type -> api.user.v1.RecordListReply
-	27, // 44: api.user.v1.User.CodeList:output_type -> api.user.v1.CodeListReply
-	9,  // 45: api.user.v1.User.OpenCard:output_type -> api.user.v1.OpenCardReply
-	11, // 46: api.user.v1.User.CheckCard:output_type -> api.user.v1.CheckCardReply
-	9,  // 47: api.user.v1.User.OpenCardTwo:output_type -> api.user.v1.OpenCardReply
-	13, // 48: api.user.v1.User.LookCard:output_type -> api.user.v1.LookCardReply
-	13, // 49: api.user.v1.User.LookCardNew:output_type -> api.user.v1.LookCardReply
-	13, // 50: api.user.v1.User.LookCardNewTwo:output_type -> api.user.v1.LookCardReply
-	15, // 51: api.user.v1.User.ChangePin:output_type -> api.user.v1.ChangePinReply
-	17, // 52: api.user.v1.User.AmountToCard:output_type -> api.user.v1.AmountToCardReply
-	19, // 53: api.user.v1.User.SetVip:output_type -> api.user.v1.SetVipReply
-	21, // 54: api.user.v1.User.AmountTo:output_type -> api.user.v1.AmountToReply
-	23, // 55: api.user.v1.User.Withdraw:output_type -> api.user.v1.WithdrawReply
-	36, // [36:56] is the sub-list for method output_type
-	16, // [16:36] is the sub-list for method input_type
+	26, // 25: api.user.v1.User.CodeListTwo:input_type -> api.user.v1.CodeListRequest
+	8,  // 26: api.user.v1.User.OpenCard:input_type -> api.user.v1.OpenCardRequest
+	10, // 27: api.user.v1.User.CheckCard:input_type -> api.user.v1.CheckCardRequest
+	8,  // 28: api.user.v1.User.OpenCardTwo:input_type -> api.user.v1.OpenCardRequest
+	12, // 29: api.user.v1.User.LookCard:input_type -> api.user.v1.LookCardRequest
+	12, // 30: api.user.v1.User.LookCardNew:input_type -> api.user.v1.LookCardRequest
+	12, // 31: api.user.v1.User.LookCardNewTwo:input_type -> api.user.v1.LookCardRequest
+	14, // 32: api.user.v1.User.ChangePin:input_type -> api.user.v1.ChangePinRequest
+	16, // 33: api.user.v1.User.AmountToCard:input_type -> api.user.v1.AmountToCardRequest
+	18, // 34: api.user.v1.User.SetVip:input_type -> api.user.v1.SetVipRequest
+	20, // 35: api.user.v1.User.AmountTo:input_type -> api.user.v1.AmountToRequest
+	22, // 36: api.user.v1.User.Withdraw:input_type -> api.user.v1.WithdrawRequest
+	1,  // 37: api.user.v1.User.CreateNonce:output_type -> api.user.v1.CreateNonceReply
+	3,  // 38: api.user.v1.User.EthAuthorize:output_type -> api.user.v1.EthAuthorizeReply
+	5,  // 39: api.user.v1.User.GetUser:output_type -> api.user.v1.GetUserReply
+	7,  // 40: api.user.v1.User.UserRecommend:output_type -> api.user.v1.RecommendListReply
+	31, // 41: api.user.v1.User.OrderList:output_type -> api.user.v1.OrderListReply
+	33, // 42: api.user.v1.User.OrderListTwo:output_type -> api.user.v1.OrderListTwoReply
+	29, // 43: api.user.v1.User.RewardList:output_type -> api.user.v1.RewardListReply
+	25, // 44: api.user.v1.User.RecordList:output_type -> api.user.v1.RecordListReply
+	27, // 45: api.user.v1.User.CodeList:output_type -> api.user.v1.CodeListReply
+	27, // 46: api.user.v1.User.CodeListTwo:output_type -> api.user.v1.CodeListReply
+	9,  // 47: api.user.v1.User.OpenCard:output_type -> api.user.v1.OpenCardReply
+	11, // 48: api.user.v1.User.CheckCard:output_type -> api.user.v1.CheckCardReply
+	9,  // 49: api.user.v1.User.OpenCardTwo:output_type -> api.user.v1.OpenCardReply
+	13, // 50: api.user.v1.User.LookCard:output_type -> api.user.v1.LookCardReply
+	13, // 51: api.user.v1.User.LookCardNew:output_type -> api.user.v1.LookCardReply
+	13, // 52: api.user.v1.User.LookCardNewTwo:output_type -> api.user.v1.LookCardReply
+	15, // 53: api.user.v1.User.ChangePin:output_type -> api.user.v1.ChangePinReply
+	17, // 54: api.user.v1.User.AmountToCard:output_type -> api.user.v1.AmountToCardReply
+	19, // 55: api.user.v1.User.SetVip:output_type -> api.user.v1.SetVipReply
+	21, // 56: api.user.v1.User.AmountTo:output_type -> api.user.v1.AmountToReply
+	23, // 57: api.user.v1.User.Withdraw:output_type -> api.user.v1.WithdrawReply
+	37, // [37:58] is the sub-list for method output_type
+	16, // [16:37] is the sub-list for method input_type
 	16, // [16:16] is the sub-list for extension type_name
 	16, // [16:16] is the sub-list for extension extendee
 	0,  // [0:16] is the sub-list for field type_name

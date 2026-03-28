@@ -28,6 +28,7 @@ const (
 	User_RewardList_FullMethodName     = "/api.user.v1.User/RewardList"
 	User_RecordList_FullMethodName     = "/api.user.v1.User/RecordList"
 	User_CodeList_FullMethodName       = "/api.user.v1.User/CodeList"
+	User_CodeListTwo_FullMethodName    = "/api.user.v1.User/CodeListTwo"
 	User_OpenCard_FullMethodName       = "/api.user.v1.User/OpenCard"
 	User_CheckCard_FullMethodName      = "/api.user.v1.User/CheckCard"
 	User_OpenCardTwo_FullMethodName    = "/api.user.v1.User/OpenCardTwo"
@@ -60,6 +61,8 @@ type UserClient interface {
 	RecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListReply, error)
 	// 明细列表
 	CodeList(ctx context.Context, in *CodeListRequest, opts ...grpc.CallOption) (*CodeListReply, error)
+	// 明细列表
+	CodeListTwo(ctx context.Context, in *CodeListRequest, opts ...grpc.CallOption) (*CodeListReply, error)
 	// 开卡
 	OpenCard(ctx context.Context, in *OpenCardRequest, opts ...grpc.CallOption) (*OpenCardReply, error)
 	CheckCard(ctx context.Context, in *CheckCardRequest, opts ...grpc.CallOption) (*CheckCardReply, error)
@@ -164,6 +167,15 @@ func (c *userClient) RecordList(ctx context.Context, in *RecordListRequest, opts
 func (c *userClient) CodeList(ctx context.Context, in *CodeListRequest, opts ...grpc.CallOption) (*CodeListReply, error) {
 	out := new(CodeListReply)
 	err := c.cc.Invoke(ctx, User_CodeList_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) CodeListTwo(ctx context.Context, in *CodeListRequest, opts ...grpc.CallOption) (*CodeListReply, error) {
+	out := new(CodeListReply)
+	err := c.cc.Invoke(ctx, User_CodeListTwo_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -288,6 +300,8 @@ type UserServer interface {
 	RecordList(context.Context, *RecordListRequest) (*RecordListReply, error)
 	// 明细列表
 	CodeList(context.Context, *CodeListRequest) (*CodeListReply, error)
+	// 明细列表
+	CodeListTwo(context.Context, *CodeListRequest) (*CodeListReply, error)
 	// 开卡
 	OpenCard(context.Context, *OpenCardRequest) (*OpenCardReply, error)
 	CheckCard(context.Context, *CheckCardRequest) (*CheckCardReply, error)
@@ -340,6 +354,9 @@ func (UnimplementedUserServer) RecordList(context.Context, *RecordListRequest) (
 }
 func (UnimplementedUserServer) CodeList(context.Context, *CodeListRequest) (*CodeListReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CodeList not implemented")
+}
+func (UnimplementedUserServer) CodeListTwo(context.Context, *CodeListRequest) (*CodeListReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CodeListTwo not implemented")
 }
 func (UnimplementedUserServer) OpenCard(context.Context, *OpenCardRequest) (*OpenCardReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OpenCard not implemented")
@@ -545,6 +562,24 @@ func _User_CodeList_Handler(srv interface{}, ctx context.Context, dec func(inter
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServer).CodeList(ctx, req.(*CodeListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_CodeListTwo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CodeListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).CodeListTwo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_CodeListTwo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).CodeListTwo(ctx, req.(*CodeListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -789,6 +824,10 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CodeList",
 			Handler:    _User_CodeList_Handler,
+		},
+		{
+			MethodName: "CodeListTwo",
+			Handler:    _User_CodeListTwo_Handler,
 		},
 		{
 			MethodName: "OpenCard",
