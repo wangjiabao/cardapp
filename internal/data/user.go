@@ -1058,11 +1058,12 @@ func (u *UserRepo) GetCodePage(ctx context.Context, b *biz.Pagination) ([]*biz.C
 
 	for _, reward := range rewards {
 		res = append(res, &biz.CardOrder{
-			ID:   reward.ID,
-			Last: reward.Last,
-			Code: reward.Code,
-			Card: reward.Card,
-			Time: reward.Time,
+			ID:        reward.ID,
+			Last:      reward.Last,
+			Code:      reward.Code,
+			Card:      reward.Card,
+			Time:      reward.Time,
+			CreatedAt: reward.CreatedAt,
 		})
 	}
 
