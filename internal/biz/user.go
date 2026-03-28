@@ -1786,7 +1786,7 @@ func (uuc *UserUseCase) CodeListTwo(ctx context.Context, req *pb.CodeListRequest
 
 	for _, v := range codeList {
 		res = append(res, &pb.CodeListReply_List{
-			CreatedAt: v.Time.Add(8 * time.Hour).Format("2006-01-02 15:04:05"),
+			CreatedAt: v.CreatedAt.Add(8 * time.Hour).Format("2006-01-02 15:04:05"),
 			Code:      v.Code,
 		})
 	}
