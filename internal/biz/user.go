@@ -195,7 +195,7 @@ func (uuc *UserUseCase) GetUserById(ctx context.Context, userId uint64) (*pb.Get
 	)
 
 	// 配置
-	configs, err = uuc.repo.GetConfigByKeys("withdraw_rate")
+	configs, err = uuc.repo.GetConfigByKeys("withdraw_rate", "card_two")
 	if nil != configs {
 		for _, vConfig := range configs {
 			if "withdraw_rate" == vConfig.KeyName {
