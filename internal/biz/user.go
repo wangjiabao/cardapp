@@ -962,15 +962,15 @@ func (uuc *UserUseCase) OpenCard(ctx context.Context, req *pb.OpenCardRequest, u
 
 	user, err = uuc.repo.GetUserById(userId)
 	if nil == user || nil != err {
-		return &pb.OpenCardReply{Status: "用户不存在"}, nil
+		return &pb.OpenCardReply{Status: "用户不存在 | err user"}, nil
 	}
 
 	if 5 <= user.UserCount {
-		return &pb.OpenCardReply{Status: "提交已经5次。联系管理员"}, nil
+		return &pb.OpenCardReply{Status: "提交已经5次。联系管理员 | post limit 5, contract admin"}, nil
 	}
 
 	if "no" != user.CardOrderId {
-		return &pb.OpenCardReply{Status: "已经提交开卡信息"}, nil
+		return &pb.OpenCardReply{Status: "已经提交开卡信息 | already post"}, nil
 	}
 
 	//if "no" != user.CardNumber {
@@ -1179,11 +1179,11 @@ func (uuc *UserUseCase) CheckCard(ctx context.Context, req *pb.CheckCardRequest,
 
 	if 2 == req.SendBody.CheckType {
 		if 5 >= len(user.CardNumber) {
-			return &pb.CheckCardReply{Status: "未提交虚拟卡开卡信息"}, nil
+			return &pb.CheckCardReply{Status: "未提交虚拟卡开卡信息 | err post card"}, nil
 		}
 
 		if 16 != len(req.SendBody.Num) {
-			return &pb.CheckCardReply{Status: "卡号格式错误"}, nil
+			return &pb.CheckCardReply{Status: "卡号格式错误 | err post card num"}, nil
 		}
 
 		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
@@ -1196,16 +1196,16 @@ func (uuc *UserUseCase) CheckCard(ctx context.Context, req *pb.CheckCardRequest,
 		}); nil != err {
 			fmt.Println(err, "开卡写入mysql错误", user)
 			return &pb.CheckCardReply{
-				Status: "开卡错误，联系管理员",
+				Status: "开卡错误，联系管理员 | err post, contract admin",
 			}, nil
 		}
 	} else {
 		if 16 != len(req.SendBody.Num) {
-			return &pb.CheckCardReply{Status: "卡号格式错误"}, nil
+			return &pb.CheckCardReply{Status: "卡号格式错误 | err post card num"}, nil
 		}
 
 		if 2 == user.CardTwo {
-			return &pb.CheckCardReply{Status: "已经激活卡片"}, nil
+			return &pb.CheckCardReply{Status: "已经激活卡片 | already post"}, nil
 		}
 
 		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
@@ -1218,7 +1218,7 @@ func (uuc *UserUseCase) CheckCard(ctx context.Context, req *pb.CheckCardRequest,
 		}); nil != err {
 			fmt.Println(err, "开卡写入mysql错误", user)
 			return &pb.CheckCardReply{
-				Status: "开卡错误，联系管理员",
+				Status: "开卡错误，联系管理员 | err post, contract admin",
 			}, nil
 		}
 	}
@@ -1234,8 +1234,9 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 		err  error
 	)
 	var (
-		configs    []*Config
-		cardAmount = float64(150)
+		configs       []*Config
+		cardAmount    = float64(100)
+		cardAmountStr string
 	)
 
 	// 配置
@@ -1243,6 +1244,7 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 	if nil != configs {
 		for _, vConfig := range configs {
 			if "card_two" == vConfig.KeyName {
+				cardAmountStr = vConfig.Value
 				cardAmount, _ = strconv.ParseFloat(vConfig.Value, 10)
 			}
 		}
@@ -1250,7 +1252,7 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 
 	user, err = uuc.repo.GetUserById(userId)
 	if nil == user || nil != err {
-		return &pb.OpenCardReply{Status: "用户不存在"}, nil
+		return &pb.OpenCardReply{Status: "用户不存在 | err user"}, nil
 	}
 
 	//if 4 >= len(user.Pic) || 4 >= len(user.PicTwo) {
@@ -1258,47 +1260,47 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 	//}
 
 	if 5 <= user.UserCount {
-		return &pb.OpenCardReply{Status: "提交已经5次。联系管理员"}, nil
+		return &pb.OpenCardReply{Status: "提交已经5次。联系管理员 | post limit 5, contract admin"}, nil
 	}
 
 	if 0 < user.CardTwo {
-		return &pb.OpenCardReply{Status: "已提交"}, nil
+		return &pb.OpenCardReply{Status: "已提交 | already post"}, nil
 	}
 
 	if uint64(cardAmount) > uint64(user.Amount) {
-		return &pb.OpenCardReply{Status: "账号余额不足199u"}, nil
+		return &pb.OpenCardReply{Status: "账号余额不足" + cardAmountStr + "u | balance not enough " + cardAmountStr + " u"}, nil
 	}
 
 	if 1 > len(req.SendBody.Email) || len(req.SendBody.Email) > 99 {
-		return &pb.OpenCardReply{Status: "邮箱错误"}, nil
+		return &pb.OpenCardReply{Status: "邮箱错误 | err email"}, nil
 	}
 
 	if 1 > len(req.SendBody.FirstName) || len(req.SendBody.FirstName) > 44 {
-		return &pb.OpenCardReply{Status: "名字错误"}, nil
+		return &pb.OpenCardReply{Status: "名字错误 | err first name"}, nil
 	}
 
 	if 1 > len(req.SendBody.LastName) || len(req.SendBody.LastName) > 44 {
-		return &pb.OpenCardReply{Status: "姓错误"}, nil
+		return &pb.OpenCardReply{Status: "姓错误 | err last name"}, nil
 	}
 
 	if 1 > len(req.SendBody.Phone) || len(req.SendBody.Phone) > 44 {
-		return &pb.OpenCardReply{Status: "手机号错误"}, nil
+		return &pb.OpenCardReply{Status: "手机号错误 | err phone"}, nil
 	}
 
 	if 1 > len(req.SendBody.CountryCode) || len(req.SendBody.CountryCode) > 44 {
-		return &pb.OpenCardReply{Status: "国家代码错误"}, nil
+		return &pb.OpenCardReply{Status: "国家代码错误 | err country code"}, nil
 	}
 
 	if 1 > len(req.SendBody.Street) || len(req.SendBody.Street) > 99 {
-		return &pb.OpenCardReply{Status: "街道错误"}, nil
+		return &pb.OpenCardReply{Status: "街道错误 | err street"}, nil
 	}
 
 	if 1 > len(req.SendBody.City) || len(req.SendBody.City) > 99 {
-		return &pb.OpenCardReply{Status: "城市错误"}, nil
+		return &pb.OpenCardReply{Status: "城市错误 | err city"}, nil
 	}
 
 	if 1 > len(req.SendBody.PostalCode) || len(req.SendBody.PostalCode) > 99 {
-		return &pb.OpenCardReply{Status: "邮政编码错误"}, nil
+		return &pb.OpenCardReply{Status: "邮政编码错误 | err postal code"}, nil
 	}
 
 	//if 1 > len(req.SendBody.PhoneCountryCode) || len(req.SendBody.PhoneCountryCode) > 99 {
@@ -1306,11 +1308,11 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 	//}
 
 	if 1 > len(req.SendBody.Gender) || len(req.SendBody.Gender) > 40 {
-		return &pb.OpenCardReply{Status: "性别错误"}, nil
+		return &pb.OpenCardReply{Status: "性别错误 | err gender"}, nil
 	}
 
-	if 10 > len(req.SendBody.IdCard) || len(req.SendBody.IdCard) > 40 {
-		return &pb.OpenCardReply{Status: "身份证号码错误"}, nil
+	if 5 > len(req.SendBody.IdCard) || len(req.SendBody.IdCard) > 40 {
+		return &pb.OpenCardReply{Status: "身份证号码错误 | err id card"}, nil
 	}
 
 	if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
@@ -1338,7 +1340,7 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 	}); nil != err {
 		fmt.Println(err, "开卡2写入mysql错误", user)
 		return &pb.OpenCardReply{
-			Status: "开卡错误，联系管理员",
+			Status: "开卡错误，联系管理员 | err post, contract admin",
 		}, nil
 	}
 
@@ -1375,16 +1377,16 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 
 	lockAmountToCard, err = uuc.repo.GetLockAmountToCardByAddress(ctx, user.Address)
 	if 0 < len(lockAmountToCard) {
-		return &pb.AmountToCardReply{Status: "每分钟划转1笔"}, nil
+		return &pb.AmountToCardReply{Status: "每分钟划转1笔 | time limit, per minutes 1"}, nil
 	}
 
 	err = uuc.repo.SetLockAmountToCardByAddress(ctx, user.Address)
 	if nil != err {
-		return &pb.AmountToCardReply{Status: "锁定失败"}, nil
+		return &pb.AmountToCardReply{Status: "锁定失败 | lock err"}, nil
 	}
 
 	if req.SendBody.Amount > uint64(user.Amount) {
-		return &pb.AmountToCardReply{Status: "账号余额不足"}, nil
+		return &pb.AmountToCardReply{Status: "账号余额不足 | balance not enough"}, nil
 	}
 
 	//if 100 > req.SendBody.Amount {
@@ -1392,21 +1394,21 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 	//}
 
 	if 20 > req.SendBody.Amount {
-		return &pb.AmountToCardReply{Status: "划转最少20u"}, nil
+		return &pb.AmountToCardReply{Status: "划转最少20u | less than 20 u"}, nil
 	}
 
 	amountFloatSubFee := float64(req.SendBody.Amount) - float64(req.SendBody.Amount)*amountToRate
 	if 0 >= amountFloatSubFee {
-		return &pb.AmountToCardReply{Status: "手续费错误"}, nil
+		return &pb.AmountToCardReply{Status: "手续费错误 | err fee rate"}, nil
 	}
 
 	if 1 == req.SendBody.ToType {
 		if 2 != user.CardTwo {
-			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通实体卡"}, nil
+			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通实体卡 | no card"}, nil
 		}
 
 		if 10 > len(user.CardTwoNumber) {
-			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通实体卡"}, nil
+			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通实体卡 | no card"}, nil
 		}
 
 		tmpRewardId := uint64(0)
@@ -1426,7 +1428,7 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 		}); nil != err {
 			fmt.Println(err, "划转写入mysql错误", user)
 			return &pb.AmountToCardReply{
-				Status: "划转错误，联系管理员",
+				Status: "划转错误，联系管理员 | err post, contract admin",
 			}, nil
 		}
 
@@ -1440,17 +1442,17 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 		if errTwo != nil {
 			fmt.Println("InterlaceCardTransferIn error:", errTwo, data)
 			return &pb.AmountToCardReply{
-				Status: "划转错误，联系管理员，记录失败",
+				Status: "划转错误，联系管理员，记录失败 | err post, contract admin",
 			}, nil
 		}
 
 	} else {
 		if "success" != user.CardOrderId {
-			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通虚拟卡"}, nil
+			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通虚拟卡 | no card"}, nil
 		}
 
 		if 10 > len(user.CardNumber) {
-			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通实体卡"}, nil
+			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通虚拟卡 | no card"}, nil
 		}
 
 		tmpRewardId := uint64(0)
@@ -1470,7 +1472,7 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 		}); nil != err {
 			fmt.Println(err, "划转写入mysql错误", user)
 			return &pb.AmountToCardReply{
-				Status: "划转错误，联系管理员",
+				Status: "划转错误，联系管理员 | err post, contract admin",
 			}, nil
 		}
 
@@ -1484,7 +1486,7 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 		if errTwo != nil {
 			fmt.Println("InterlaceCardTransferIn error:", errTwo, data)
 			return &pb.AmountToCardReply{
-				Status: "划转错误，联系管理员，记录失败",
+				Status: "划转错误，联系管理员，记录失败 | err post, contract admin",
 			}, nil
 		}
 	}
@@ -1511,7 +1513,7 @@ func (uuc *UserUseCase) ChangePin(ctx context.Context, req *pb.ChangePinRequest,
 			AccountId: interlaceAccountId,
 		})
 		if !res || errTwo != nil {
-			return &pb.ChangePinReply{Status: "实体卡修改pin失败"}, nil
+			return &pb.ChangePinReply{Status: "实体卡修改pin失败 | err post，err update pin"}, nil
 		}
 
 	} else {
@@ -1520,7 +1522,7 @@ func (uuc *UserUseCase) ChangePin(ctx context.Context, req *pb.ChangePinRequest,
 			AccountId: interlaceAccountId,
 		})
 		if !res || errTwo != nil {
-			return &pb.ChangePinReply{Status: "虚拟卡修改pin失败"}, nil
+			return &pb.ChangePinReply{Status: "虚拟卡修改pin失败 | err post，err update pin"}, nil
 		}
 	}
 
@@ -1573,7 +1575,7 @@ func (uuc *UserUseCase) LookCardNew(ctx context.Context, req *pb.LookCardRequest
 		card, err := InterlaceFreezeCard(ctx, interlaceAccountId, user.CardNumber)
 		if err != nil {
 			fmt.Println("freeze error:", err)
-			return &pb.LookCardReply{Status: "冻结虚拟卡失败"}, nil
+			return &pb.LookCardReply{Status: "冻结虚拟卡失败 | err lock"}, nil
 		}
 		fmt.Println("freeze ok, status =", card.Status) // 期望 FROZEN
 	} else {
@@ -1585,7 +1587,7 @@ func (uuc *UserUseCase) LookCardNew(ctx context.Context, req *pb.LookCardRequest
 		card, err := InterlaceFreezeCard(ctx, interlaceAccountId, user.CardTwoNumber)
 		if err != nil {
 			fmt.Println("freeze error:", err)
-			return &pb.LookCardReply{Status: "冻结实体卡失败"}, nil
+			return &pb.LookCardReply{Status: "冻结实体卡失败 | err lock"}, nil
 		}
 		fmt.Println("freeze ok, status =", card.Status) // 期望 FROZEN
 	}
@@ -1654,11 +1656,11 @@ func (uuc *UserUseCase) AmountTo(ctx context.Context, req *pb.AmountToRequest, u
 	}
 
 	if req.SendBody.Amount > uint64(user.Amount) {
-		return &pb.AmountToReply{Status: "账号余额不足"}, nil
+		return &pb.AmountToReply{Status: "账号余额不足 | balance not enough"}, nil
 	}
 
 	if 30 > len(req.SendBody.Address) || 60 < len(req.SendBody.Address) {
-		return &pb.AmountToReply{Status: "账号参数格式不正确"}, nil
+		return &pb.AmountToReply{Status: "账号参数格式不正确 | err address"}, nil
 	}
 
 	toUser, err = uuc.repo.GetUserByAddress(req.SendBody.Address)
@@ -1851,12 +1853,12 @@ func (uuc *UserUseCase) Withdraw(ctx context.Context, req *pb.WithdrawRequest, u
 	}
 
 	if req.SendBody.Amount > uint64(user.Amount) {
-		return &pb.WithdrawReply{Status: "账号余额不足"}, nil
+		return &pb.WithdrawReply{Status: "账号余额不足 | balance not enough"}, nil
 	}
 
 	amountFloatSubFee := float64(req.SendBody.Amount) - float64(req.SendBody.Amount)*withdrawRate
 	if 0 >= amountFloatSubFee {
-		return &pb.WithdrawReply{Status: "手续费错误"}, nil
+		return &pb.WithdrawReply{Status: "手续费错误 | err fee rate"}, nil
 	}
 
 	if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
