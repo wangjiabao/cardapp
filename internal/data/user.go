@@ -22,7 +22,7 @@ type User struct {
 	Amount           float64   `gorm:"type:decimal(65,20)"`
 	IsDelete         uint64    `gorm:"type:int"`
 	Vip              uint64    `gorm:"type:int"`
-	MyTotalAmount    uint64    `gorm:"type:bigint"`
+	MyTotalAmount    float64   `gorm:"type:decimal(65,20);not null"`
 	AmountTwo        uint64    `gorm:"type:bigint"`
 	FirstName        string    `gorm:"type:varchar(45);not null;default:'no'"`
 	LastName         string    `gorm:"type:varchar(45);not null;default:'no'"`
@@ -406,6 +406,33 @@ func (u *UserRepo) GetUserRecommendLikeCode(code string) ([]*biz.UserRecommend, 
 	return res, nil
 }
 
+// CreateCardRecommendNewR .
+func (u *UserRepo) CreateCardRecommendNewR(ctx context.Context, userId uint64, amount float64, vip uint64, address string) error {
+	res := u.data.DB(ctx).Table("user").Where("id=?", userId).
+		Updates(map[string]interface{}{
+			"amount":     gorm.Expr("amount + ?", amount),
+			"updated_at": time.Now().Format("2006-01-02 15:04:05"),
+		})
+	if res.Error != nil || 0 >= res.RowsAffected {
+		return errors.New(500, "UPDATE_USER_ERROR", "用户信息修改失败")
+	}
+	var (
+		reward Reward
+	)
+
+	reward.UserId = userId
+	reward.Amount = amount
+	reward.One = vip
+	reward.Reason = 16 // 给我分红的理由
+	reward.Address = address
+	resInsert := u.data.DB(ctx).Table("reward").Create(&reward)
+	if resInsert.Error != nil || 0 >= resInsert.RowsAffected {
+		return errors.New(500, "CREATE_LOCATION_ERROR", "信息创建失败")
+	}
+
+	return nil
+}
+
 // GetUserByUserIds .
 func (u *UserRepo) GetUserByUserIds(userIds []uint64) (map[uint64]*biz.User, error) {
 	var users []*User
@@ -652,6 +679,20 @@ func (u *UserRepo) CreateCardTwo(ctx context.Context, userId uint64, user *biz.U
 	resInsertTwo := u.data.DB(ctx).Table("card_two").Create(&cardTwo)
 	if resInsertTwo.Error != nil || 0 >= resInsertTwo.RowsAffected {
 		return errors.New(500, "CREATE_LOCATION_ERROR", "信息创建失败")
+	}
+
+	return nil
+}
+
+// UpdateUserMyTotalAmountAdd .
+func (u *UserRepo) UpdateUserMyTotalAmountAdd(ctx context.Context, userId uint64, amount float64) error {
+	res := u.data.DB(ctx).Table("user").Where("id=?", userId).
+		Updates(map[string]interface{}{
+			"my_total_amount": gorm.Expr("my_total_amount + ?", amount),
+			"updated_at":      time.Now().Format("2006-01-02 15:04:05"),
+		})
+	if res.Error != nil || 0 >= res.RowsAffected {
+		return errors.New(500, "UPDATE_USER_ERROR", "用户信息修改失败")
 	}
 
 	return nil

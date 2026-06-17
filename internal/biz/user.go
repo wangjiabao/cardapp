@@ -32,7 +32,7 @@ type User struct {
 	CardAmount       float64
 	Amount           float64
 	AmountTwo        uint64
-	MyTotalAmount    uint64
+	MyTotalAmount    float64
 	IsDelete         uint64
 	Vip              uint64
 	FirstName        string
@@ -138,6 +138,7 @@ type UserRepo interface {
 	GetUserRecommendByCode(code string) ([]*UserRecommend, error)
 	GetUserRecommendLikeCode(code string) ([]*UserRecommend, error)
 	GetUserByUserIds(userIds []uint64) (map[uint64]*User, error)
+	CreateCardRecommendNewR(ctx context.Context, userId uint64, amount float64, vip uint64, address string) error
 	CreateCard(ctx context.Context, userId uint64, user *User) error
 	UpdateCardCardNumberRel(ctx context.Context, userId uint64, cardNumberRel string) error
 	UpdateCardCardNumberRelTwo(ctx context.Context, userId uint64, cardNumberRel string) error
@@ -161,6 +162,7 @@ type UserRepo interface {
 	UploadCardTwoLock(ctx context.Context, userId uint64) error
 	GetUserCodePage(ctx context.Context, b *Pagination, card string) ([]*CardOrder, error, int64)
 	GetCodePage(ctx context.Context, b *Pagination) ([]*CardOrder, error, int64)
+	UpdateUserMyTotalAmountAdd(ctx context.Context, userId uint64, amount float64) error
 }
 
 type UserUseCase struct {
@@ -288,7 +290,7 @@ func (uuc *UserUseCase) GetUserById(ctx context.Context, userId uint64) (*pb.Get
 		Status:           "ok",
 		Address:          user.Address,
 		Amount:           fmt.Sprintf("%.2f", user.Amount),
-		MyTotalAmount:    user.MyTotalAmount,
+		MyTotalAmount:    uint64(user.MyTotalAmount),
 		Vip:              user.Vip,
 		CardNum:          "",
 		CardStatus:       cardStatus,
@@ -401,7 +403,7 @@ func (uuc *UserUseCase) GetUserRecommend(ctx context.Context, req *pb.RecommendL
 
 		res = append(res, &pb.RecommendListReply_List{
 			Address:  usersMap[vMyUserRecommend.UserId].Address,
-			Amount:   usersMap[vMyUserRecommend.UserId].AmountTwo + usersMap[vMyUserRecommend.UserId].MyTotalAmount,
+			Amount:   usersMap[vMyUserRecommend.UserId].AmountTwo + uint64(usersMap[vMyUserRecommend.UserId].MyTotalAmount),
 			Vip:      usersMap[vMyUserRecommend.UserId].Vip,
 			VipThree: usersMap[vMyUserRecommend.UserId].VipThree,
 			CardOpen: cardOpen,
@@ -1363,14 +1365,54 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 	var (
 		configs      []*Config
 		amountToRate float64
+		v1L          float64
+		v2L          float64
+		v3L          float64
+		v4L          float64
+		v5L          float64
+		v1R          float64
+		v2R          float64
+		v3R          float64
+		v4R          float64
+		v5R          float64
 	)
 
 	// 配置
-	configs, err = uuc.repo.GetConfigByKeys("amount_to_rate")
+	configs, err = uuc.repo.GetConfigByKeys("amount_to_rate", "v1", "v2", "v3", "v4", "v5", "v1r", "v2r", "v3r", "v4r", "v5r")
 	if nil != configs {
 		for _, vConfig := range configs {
 			if "amount_to_rate" == vConfig.KeyName {
 				amountToRate, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v1" == vConfig.KeyName {
+				v1L, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v2" == vConfig.KeyName {
+				v2L, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v3" == vConfig.KeyName {
+				v3L, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v4" == vConfig.KeyName {
+				v4L, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v5" == vConfig.KeyName {
+				v5L, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v1r" == vConfig.KeyName {
+				v1R, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v2r" == vConfig.KeyName {
+				v2R, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v3r" == vConfig.KeyName {
+				v3R, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v4r" == vConfig.KeyName {
+				v4R, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v5r" == vConfig.KeyName {
+				v5R, _ = strconv.ParseFloat(vConfig.Value, 10)
 			}
 		}
 	}
@@ -1402,6 +1444,48 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 		return &pb.AmountToCardReply{Status: "手续费错误 | err fee rate"}, nil
 	}
 
+	// 推荐人
+	var (
+		userRecommend       *UserRecommend
+		tmpRecommendUserIds []string
+	)
+	userRecommend, err = uuc.repo.GetUserRecommendByUserId(userId)
+	if nil != err {
+		return &pb.AmountToCardReply{
+			Status: "划转错误，联系管理员 | err post, contract admin",
+		}, nil
+	}
+	if "" != userRecommend.RecommendCode {
+		tmpRecommendUserIds = strings.Split(userRecommend.RecommendCode, "D")
+	}
+
+	tmpUserIds := make([]uint64, 0)
+	tmpUserIds = append(tmpUserIds, userId)
+	for _, vMyUserRecommend := range tmpRecommendUserIds {
+		tmpUserId, _ := strconv.ParseUint(vMyUserRecommend, 10, 64) // 最后一位是直推人
+		if 0 >= tmpUserId {
+			continue
+		}
+		tmpUserIds = append(tmpUserIds, tmpUserId)
+	}
+
+	var (
+		usersMap map[uint64]*User
+	)
+
+	usersMap, err = uuc.repo.GetUserByUserIds(tmpUserIds)
+	if nil == usersMap || nil != err {
+		return &pb.AmountToCardReply{
+			Status: "划转错误，联系管理员 | err post, contract admin",
+		}, nil
+	}
+
+	if 0 >= len(usersMap) {
+		return &pb.AmountToCardReply{
+			Status: "划转错误，联系管理员 | err post, contract admin",
+		}, nil
+	}
+
 	if 1 == req.SendBody.ToType {
 		if 2 != user.CardTwo {
 			return &pb.AmountToCardReply{Status: "无卡片记录，请先开通实体卡 | no card"}, nil
@@ -1430,6 +1514,87 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 			return &pb.AmountToCardReply{
 				Status: "划转错误，联系管理员 | err post, contract admin",
 			}, nil
+		}
+
+		totalTmp := len(tmpRecommendUserIds) - 1
+		for i := totalTmp; i >= 0; i-- {
+			tmpUserId, _ := strconv.ParseUint(tmpRecommendUserIds[i], 10, 64) // 最后一位是直推人
+			if 0 >= tmpUserId {
+				continue
+			}
+
+			// 增加业绩
+			if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
+				err = uuc.repo.UpdateUserMyTotalAmountAdd(ctx, tmpUserId, float64(req.SendBody.Amount))
+				if err != nil {
+					return err
+				}
+
+				return nil
+			}); nil != err {
+				fmt.Println("遍历业绩，实体卡划转：", err, tmpUserId, float64(req.SendBody.Amount))
+				continue
+			}
+		}
+
+		tVip := 0
+		lR := float64(0)
+		for i := totalTmp; i >= 0; i-- {
+			tmpUserId, _ := strconv.ParseUint(tmpRecommendUserIds[i], 10, 64) // 最后一位是直推人
+			if 0 >= tmpUserId {
+				continue
+			}
+
+			if _, ok := usersMap[tmpUserId]; !ok {
+				fmt.Println("开卡遍历，信息缺失：", tmpUserId)
+				continue
+			}
+
+			cVip := 0
+			cR := float64(0)
+			if v5L <= usersMap[tmpUserId].MyTotalAmount {
+				cVip = 5
+				cR = v5R
+			} else if v4L <= usersMap[tmpUserId].MyTotalAmount {
+				cVip = 4
+				cR = v4R
+			} else if v3L <= usersMap[tmpUserId].MyTotalAmount {
+				cVip = 3
+				cR = v3R
+			} else if v2L <= usersMap[tmpUserId].MyTotalAmount {
+				cVip = 2
+				cR = v2R
+			} else if v1L <= usersMap[tmpUserId].MyTotalAmount {
+				cVip = 1
+				cR = v1R
+			} else {
+				continue
+			}
+
+			if cVip <= tVip {
+				continue
+			}
+			if 0 >= cR-lR {
+				continue
+			}
+			tmpR := cR - lR
+
+			tVip = cVip
+			lR = cR
+
+			if 0.0001 < tmpR {
+				tmpAmount := float64(req.SendBody.Amount) * tmpR
+				if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
+					err = uuc.repo.CreateCardRecommendNewR(ctx, tmpUserId, tmpAmount, uint64(tVip), usersMap[userId].Address)
+					if err != nil {
+						return err
+					}
+
+					return nil
+				}); nil != err {
+					fmt.Println("err reward", err, tmpUserId, float64(req.SendBody.Amount), usersMap[tmpUserId])
+				}
+			}
 		}
 
 		// 划转
@@ -1474,6 +1639,87 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 			return &pb.AmountToCardReply{
 				Status: "划转错误，联系管理员 | err post, contract admin",
 			}, nil
+		}
+
+		totalTmp := len(tmpRecommendUserIds) - 1
+		for i := totalTmp; i >= 0; i-- {
+			tmpUserId, _ := strconv.ParseUint(tmpRecommendUserIds[i], 10, 64) // 最后一位是直推人
+			if 0 >= tmpUserId {
+				continue
+			}
+
+			// 增加业绩
+			if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
+				err = uuc.repo.UpdateUserMyTotalAmountAdd(ctx, tmpUserId, float64(req.SendBody.Amount))
+				if err != nil {
+					return err
+				}
+
+				return nil
+			}); nil != err {
+				fmt.Println("遍历业绩，虚拟卡划转：", err, tmpUserId, float64(req.SendBody.Amount))
+				continue
+			}
+		}
+
+		tVip := 0
+		lR := float64(0)
+		for i := totalTmp; i >= 0; i-- {
+			tmpUserId, _ := strconv.ParseUint(tmpRecommendUserIds[i], 10, 64) // 最后一位是直推人
+			if 0 >= tmpUserId {
+				continue
+			}
+
+			if _, ok := usersMap[tmpUserId]; !ok {
+				fmt.Println("开卡遍历，信息缺失：", tmpUserId)
+				continue
+			}
+
+			cVip := 0
+			cR := float64(0)
+			if v5L <= usersMap[tmpUserId].MyTotalAmount {
+				cVip = 5
+				cR = v5R
+			} else if v4L <= usersMap[tmpUserId].MyTotalAmount {
+				cVip = 4
+				cR = v4R
+			} else if v3L <= usersMap[tmpUserId].MyTotalAmount {
+				cVip = 3
+				cR = v3R
+			} else if v2L <= usersMap[tmpUserId].MyTotalAmount {
+				cVip = 2
+				cR = v2R
+			} else if v1L <= usersMap[tmpUserId].MyTotalAmount {
+				cVip = 1
+				cR = v1R
+			} else {
+				continue
+			}
+
+			if cVip <= tVip {
+				continue
+			}
+			if 0 >= cR-lR {
+				continue
+			}
+			tmpR := cR - lR
+
+			tVip = cVip
+			lR = cR
+
+			if 0.0001 < tmpR {
+				tmpAmount := float64(req.SendBody.Amount) * tmpR
+				if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
+					err = uuc.repo.CreateCardRecommendNewR(ctx, tmpUserId, tmpAmount, uint64(tVip), usersMap[userId].Address)
+					if err != nil {
+						return err
+					}
+
+					return nil
+				}); nil != err {
+					fmt.Println("err reward", err, tmpUserId, float64(req.SendBody.Amount), usersMap[tmpUserId])
+				}
+			}
 		}
 
 		// 划转
