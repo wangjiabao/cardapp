@@ -1552,19 +1552,19 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 
 			cVip := 0
 			cR := float64(0)
-			if v5L <= usersMap[tmpUserId].MyTotalAmount {
+			if 5 == usersMap[tmpUserId].VipThree || v5L <= usersMap[tmpUserId].MyTotalAmount {
 				cVip = 5
 				cR = v5R
-			} else if v4L <= usersMap[tmpUserId].MyTotalAmount {
+			} else if 4 == usersMap[tmpUserId].VipThree || v4L <= usersMap[tmpUserId].MyTotalAmount {
 				cVip = 4
 				cR = v4R
-			} else if v3L <= usersMap[tmpUserId].MyTotalAmount {
+			} else if 3 == usersMap[tmpUserId].VipThree || v3L <= usersMap[tmpUserId].MyTotalAmount {
 				cVip = 3
 				cR = v3R
-			} else if v2L <= usersMap[tmpUserId].MyTotalAmount {
+			} else if 2 == usersMap[tmpUserId].VipThree || v2L <= usersMap[tmpUserId].MyTotalAmount {
 				cVip = 2
 				cR = v2R
-			} else if v1L <= usersMap[tmpUserId].MyTotalAmount {
+			} else if 1 == usersMap[tmpUserId].VipThree || v1L <= usersMap[tmpUserId].MyTotalAmount {
 				cVip = 1
 				cR = v1R
 			} else {
@@ -1677,19 +1677,19 @@ func (uuc *UserUseCase) AmountToCard(ctx context.Context, req *pb.AmountToCardRe
 
 			cVip := 0
 			cR := float64(0)
-			if v5L <= usersMap[tmpUserId].MyTotalAmount {
+			if 5 == usersMap[tmpUserId].VipThree || v5L <= usersMap[tmpUserId].MyTotalAmount {
 				cVip = 5
 				cR = v5R
-			} else if v4L <= usersMap[tmpUserId].MyTotalAmount {
+			} else if 4 == usersMap[tmpUserId].VipThree || v4L <= usersMap[tmpUserId].MyTotalAmount {
 				cVip = 4
 				cR = v4R
-			} else if v3L <= usersMap[tmpUserId].MyTotalAmount {
+			} else if 3 == usersMap[tmpUserId].VipThree || v3L <= usersMap[tmpUserId].MyTotalAmount {
 				cVip = 3
 				cR = v3R
-			} else if v2L <= usersMap[tmpUserId].MyTotalAmount {
+			} else if 2 == usersMap[tmpUserId].VipThree || v2L <= usersMap[tmpUserId].MyTotalAmount {
 				cVip = 2
 				cR = v2R
-			} else if v1L <= usersMap[tmpUserId].MyTotalAmount {
+			} else if 1 == usersMap[tmpUserId].VipThree || v1L <= usersMap[tmpUserId].MyTotalAmount {
 				cVip = 1
 				cR = v1R
 			} else {
