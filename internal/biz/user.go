@@ -190,6 +190,11 @@ func (uuc *UserUseCase) GetUserById(ctx context.Context, userId uint64) (*pb.Get
 		withdrawRate           float64
 		amountToRate           float64
 		cardTwo                string
+		v1L                    float64
+		v2L                    float64
+		v3L                    float64
+		v4L                    float64
+		v5L                    float64
 	)
 
 	var (
@@ -197,7 +202,7 @@ func (uuc *UserUseCase) GetUserById(ctx context.Context, userId uint64) (*pb.Get
 	)
 
 	// 配置
-	configs, err = uuc.repo.GetConfigByKeys("withdraw_rate", "card_two")
+	configs, err = uuc.repo.GetConfigByKeys("withdraw_rate", "card_two", "v1", "v2", "v3", "v4", "v5")
 	if nil != configs {
 		for _, vConfig := range configs {
 			if "withdraw_rate" == vConfig.KeyName {
@@ -208,6 +213,21 @@ func (uuc *UserUseCase) GetUserById(ctx context.Context, userId uint64) (*pb.Get
 			}
 			if "card_two" == vConfig.KeyName {
 				cardTwo = vConfig.Value
+			}
+			if "v1" == vConfig.KeyName {
+				v1L, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v2" == vConfig.KeyName {
+				v2L, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v3" == vConfig.KeyName {
+				v3L, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v4" == vConfig.KeyName {
+				v4L, _ = strconv.ParseFloat(vConfig.Value, 10)
+			}
+			if "v5" == vConfig.KeyName {
+				v5L, _ = strconv.ParseFloat(vConfig.Value, 10)
 			}
 		}
 	}
@@ -286,6 +306,19 @@ func (uuc *UserUseCase) GetUserById(ctx context.Context, userId uint64) (*pb.Get
 		}
 	}
 
+	cVip := uint64(0)
+	if 5 == user.VipThree || v5L <= user.MyTotalAmount {
+		cVip = 5
+	} else if 4 == user.VipThree || v4L <= user.MyTotalAmount {
+		cVip = 4
+	} else if 3 == user.VipThree || v3L <= user.MyTotalAmount {
+		cVip = 3
+	} else if 2 == user.VipThree || v2L <= user.MyTotalAmount {
+		cVip = 2
+	} else if 1 == user.VipThree || v1L <= user.MyTotalAmount {
+		cVip = 1
+	}
+
 	return &pb.GetUserReply{
 		Status:           "ok",
 		Address:          user.Address,
@@ -299,7 +332,7 @@ func (uuc *UserUseCase) GetUserById(ctx context.Context, userId uint64) (*pb.Get
 		WithdrawRate:     withdrawRate,
 		CardStatusTwo:    user.CardTwo,
 		CanVip:           user.CanVip,
-		VipThree:         user.VipThree,
+		VipThree:         cVip,
 		CardTwo:          cardTwo,
 		CardAmountTwo:    cardAmountTwo,
 		PicTwo:           "/images/" + user.PicTwo,
