@@ -436,7 +436,7 @@ func (uuc *UserUseCase) GetUserRecommend(ctx context.Context, req *pb.RecommendL
 
 		res = append(res, &pb.RecommendListReply_List{
 			Address:  usersMap[vMyUserRecommend.UserId].Address,
-			Amount:   usersMap[vMyUserRecommend.UserId].AmountTwo + uint64(usersMap[vMyUserRecommend.UserId].MyTotalAmount),
+			Amount:   uint64(usersMap[vMyUserRecommend.UserId].MyTotalAmount),
 			Vip:      usersMap[vMyUserRecommend.UserId].Vip,
 			VipThree: usersMap[vMyUserRecommend.UserId].VipThree,
 			CardOpen: cardOpen,
