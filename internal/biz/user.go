@@ -84,6 +84,30 @@ type UserRecommend struct {
 	UpdatedAt     time.Time
 }
 
+type CardTwo struct {
+	ID               uint64
+	UserId           uint64
+	FirstName        string
+	LastName         string
+	Email            string
+	CountryCode      string
+	Phone            string
+	City             string
+	Country          string
+	Street           string
+	PostalCode       string
+	BirthDate        string
+	PhoneCountryCode string
+	State            string
+	Status           uint64
+	CardId           string
+	CardAmount       float64
+	IdCard           string
+	Gender           string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
+
 type Config struct {
 	ID      uint64
 	KeyName string
@@ -141,7 +165,7 @@ type UserRepo interface {
 	CreateCardRecommendNewR(ctx context.Context, userId uint64, amount float64, vip uint64, address string) error
 	CreateCard(ctx context.Context, userId uint64, user *User) error
 	UpdateCardCardNumberRel(ctx context.Context, userId uint64, cardNumberRel string) error
-	UpdateCardCardNumberRelTwo(ctx context.Context, userId uint64, cardNumberRel string) error
+	UpdateCardCardNumberRelTwo(ctx context.Context, userId uint64, cardNumberRel string, needCreate bool) error
 	CreateCardTwo(ctx context.Context, userId uint64, user *User, num uint64) error
 	GetAllUsers() ([]*User, error)
 	UpdateCard(ctx context.Context, userId uint64, cardOrderId, card string) error
@@ -163,6 +187,7 @@ type UserRepo interface {
 	GetUserCodePage(ctx context.Context, b *Pagination, card string) ([]*CardOrder, error, int64)
 	GetCodePage(ctx context.Context, b *Pagination) ([]*CardOrder, error, int64)
 	UpdateUserMyTotalAmountAdd(ctx context.Context, userId uint64, amount float64) error
+	GetCardTwoByUserId(id uint64) (*CardTwo, error)
 }
 
 type UserUseCase struct {
@@ -1201,7 +1226,12 @@ func (uuc *UserUseCase) OpenCard(ctx context.Context, req *pb.OpenCardRequest, u
 	}, nil
 }
 
+var lockCardCheck sync.Mutex
+
 func (uuc *UserUseCase) CheckCard(ctx context.Context, req *pb.CheckCardRequest, userId uint64) (*pb.CheckCardReply, error) {
+	lockCardCheck.Lock()
+	defer lockCardCheck.Unlock()
+
 	var (
 		user *User
 		err  error
@@ -1243,8 +1273,23 @@ func (uuc *UserUseCase) CheckCard(ctx context.Context, req *pb.CheckCardRequest,
 			return &pb.CheckCardReply{Status: "已经激活卡片 | already post"}, nil
 		}
 
+		var (
+			userCardTwo *CardTwo
+			createTwo   bool
+		)
+		userCardTwo, err = uuc.repo.GetCardTwoByUserId(userId)
+		if nil != err {
+			return &pb.CheckCardReply{
+				Status: "开卡错误，联系管理员 | err post, contract admin",
+			}, nil
+		}
+
+		if nil == userCardTwo {
+			createTwo = true
+		}
+
 		if err = uuc.tx.ExecTx(ctx, func(ctx context.Context) error { // 事务
-			err = uuc.repo.UpdateCardCardNumberRelTwo(ctx, userId, req.SendBody.Num)
+			err = uuc.repo.UpdateCardCardNumberRelTwo(ctx, userId, req.SendBody.Num, createTwo)
 			if nil != err {
 				return err
 			}

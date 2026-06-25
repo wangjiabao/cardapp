@@ -531,7 +531,7 @@ func (u *UserRepo) UpdateCardCardNumberRel(ctx context.Context, userId uint64, c
 }
 
 // UpdateCardCardNumberRelTwo .
-func (u *UserRepo) UpdateCardCardNumberRelTwo(ctx context.Context, userId uint64, cardNumberRel string) error {
+func (u *UserRepo) UpdateCardCardNumberRelTwo(ctx context.Context, userId uint64, cardNumberRel string, needCreate bool) error {
 	res := u.data.DB(ctx).Table("user").Where("id=?", userId).
 		Updates(map[string]interface{}{
 			"card_number_rel_two": cardNumberRel,
@@ -541,17 +541,59 @@ func (u *UserRepo) UpdateCardCardNumberRelTwo(ctx context.Context, userId uint64
 		return errors.New(500, "UPDATE_USER_ERROR", "用户信息修改失败")
 	}
 
+	if needCreate {
+		var (
+			cardTwo CardTwo
+		)
+
+		cardTwo.UserId = userId
+		resInsertTwo := u.data.DB(ctx).Table("card_two").Create(&cardTwo)
+		if resInsertTwo.Error != nil || 0 >= resInsertTwo.RowsAffected {
+			return errors.New(500, "CREATE_LOCATION_ERROR", "信息创建失败")
+		}
+	}
+	
+	return nil
+}
+
+// GetCardTwoByUserId .
+func (u *UserRepo) GetCardTwoByUserId(id uint64) (*biz.CardTwo, error) {
 	var (
-		cardTwo CardTwo
+		c *CardTwo
 	)
 
-	cardTwo.UserId = userId
-	resInsertTwo := u.data.DB(ctx).Table("card_two").Create(&cardTwo)
-	if resInsertTwo.Error != nil || 0 >= resInsertTwo.RowsAffected {
-		return errors.New(500, "CREATE_LOCATION_ERROR", "信息创建失败")
+	// 按 id 升序，你可以按需要改成 desc
+	instance := u.data.db.Table("card_two").Where("user_id = ?", id)
+
+	if err := instance.First(&c).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// 跟 GetConfigs 一样风格，返回 NotFound 错误
+			return nil, nil
+		}
+
+		return nil, errors.New(500, "CARD_TWO_ERROR", err.Error())
 	}
 
-	return nil
+	return &biz.CardTwo{
+		ID:               c.ID,
+		UserId:           c.UserId,
+		FirstName:        c.FirstName,
+		LastName:         c.LastName,
+		Email:            c.Email,
+		CountryCode:      c.CountryCode,
+		Phone:            c.Phone,
+		City:             c.City,
+		Country:          c.Country,
+		Street:           c.Street,
+		PostalCode:       c.PostalCode,
+		BirthDate:        c.BirthDate,
+		PhoneCountryCode: c.PhoneCountryCode,
+		State:            c.State,
+		Status:           c.Status,
+		CardId:           c.CardId,
+		CreatedAt:        c.CreatedAt,
+		UpdatedAt:        c.UpdatedAt,
+	}, nil
 }
 
 // CreateCard .
