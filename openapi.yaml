@@ -713,6 +713,8 @@ components:
         OpenCardRequest_SendBody:
             type: object
             properties:
+                num:
+                    type: string
                 sign:
                     type: string
                 email:

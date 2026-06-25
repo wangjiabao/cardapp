@@ -61,6 +61,30 @@ type CardOrder struct {
 	UpdatedAt time.Time  `gorm:"type:datetime;not null"`
 }
 
+type CardTwoNew struct {
+	ID               uint64    `gorm:"primarykey;type:int"`
+	UserId           uint64    `gorm:"type:int;not null"`
+	FirstName        string    `gorm:"type:varchar(45);not null;default:'no'"`
+	LastName         string    `gorm:"type:varchar(45);not null;default:'no'"`
+	Email            string    `gorm:"type:varchar(100);not null;default:'no'"`
+	CountryCode      string    `gorm:"type:varchar(45);not null;default:'no'"`
+	Phone            string    `gorm:"type:varchar(45);not null;default:'no'"`
+	City             string    `gorm:"type:varchar(100);not null;default:'no'"`
+	Country          string    `gorm:"type:varchar(100);not null;default:'no'"`
+	Street           string    `gorm:"type:varchar(100);not null;default:'no'"`
+	PostalCode       string    `gorm:"type:varchar(45);not null;default:'no'"`
+	BirthDate        string    `gorm:"type:varchar(45);not null;default:'no'"`
+	PhoneCountryCode string    `gorm:"type:varchar(45);not null;default:'no'"`
+	State            string    `gorm:"type:varchar(45);not null;default:'no'"`
+	Status           uint64    `gorm:"type:int"`
+	Num              uint64    `gorm:"type:int"`
+	CardId           string    `gorm:"type:varchar(100);not null;default:'no'"`
+	CreatedAt        time.Time `gorm:"type:datetime;not null"`
+	UpdatedAt        time.Time `gorm:"type:datetime;not null"`
+	IdCard           string    `gorm:"type:varchar(45);not null;default:'no'"`
+	Gender           string    `gorm:"type:varchar(45);not null;default:'no'"`
+}
+
 type CardTwo struct {
 	ID               uint64    `gorm:"primarykey;type:int"`
 	UserId           uint64    `gorm:"type:int;not null"`
@@ -517,6 +541,16 @@ func (u *UserRepo) UpdateCardCardNumberRelTwo(ctx context.Context, userId uint64
 		return errors.New(500, "UPDATE_USER_ERROR", "用户信息修改失败")
 	}
 
+	var (
+		cardTwo CardTwo
+	)
+
+	cardTwo.UserId = userId
+	resInsertTwo := u.data.DB(ctx).Table("card_two").Create(&cardTwo)
+	if resInsertTwo.Error != nil || 0 >= resInsertTwo.RowsAffected {
+		return errors.New(500, "CREATE_LOCATION_ERROR", "信息创建失败")
+	}
+
 	return nil
 }
 
@@ -633,12 +667,12 @@ func (u *UserRepo) UploadCardPicTwo(ctx context.Context, userId uint64, pic stri
 }
 
 // CreateCardTwo .
-func (u *UserRepo) CreateCardTwo(ctx context.Context, userId uint64, user *biz.User) error {
-	res := u.data.DB(ctx).Table("user").Where("id=?", userId).Where("amount>=?", user.Amount).Where("card_two=?", 0).
+func (u *UserRepo) CreateCardTwo(ctx context.Context, userId uint64, user *biz.User, num uint64) error {
+	res := u.data.DB(ctx).Table("user").Where("id=?", userId).Where("amount>=?", user.Amount).
 		Updates(map[string]interface{}{
 			"amount":     gorm.Expr("amount - ?", user.Amount),
 			"updated_at": time.Now().Format("2006-01-02 15:04:05"),
-			"card_two":   1,
+			//"card_two":   1,
 		})
 	if res.Error != nil || 0 >= res.RowsAffected {
 		return errors.New(500, "UPDATE_USER_ERROR", "用户信息修改失败")
@@ -657,7 +691,7 @@ func (u *UserRepo) CreateCardTwo(ctx context.Context, userId uint64, user *biz.U
 	}
 
 	var (
-		cardTwo CardTwo
+		cardTwo CardTwoNew
 	)
 
 	cardTwo.UserId = userId
@@ -675,8 +709,9 @@ func (u *UserRepo) CreateCardTwo(ctx context.Context, userId uint64, user *biz.U
 	cardTwo.PhoneCountryCode = user.PhoneCountryCode
 	cardTwo.IdCard = user.IdCard
 	cardTwo.Gender = user.Gender
+	cardTwo.Num = num
 
-	resInsertTwo := u.data.DB(ctx).Table("card_two").Create(&cardTwo)
+	resInsertTwo := u.data.DB(ctx).Table("card_two_new").Create(&cardTwo)
 	if resInsertTwo.Error != nil || 0 >= resInsertTwo.RowsAffected {
 		return errors.New(500, "CREATE_LOCATION_ERROR", "信息创建失败")
 	}

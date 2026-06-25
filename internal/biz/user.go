@@ -142,7 +142,7 @@ type UserRepo interface {
 	CreateCard(ctx context.Context, userId uint64, user *User) error
 	UpdateCardCardNumberRel(ctx context.Context, userId uint64, cardNumberRel string) error
 	UpdateCardCardNumberRelTwo(ctx context.Context, userId uint64, cardNumberRel string) error
-	CreateCardTwo(ctx context.Context, userId uint64, user *User) error
+	CreateCardTwo(ctx context.Context, userId uint64, user *User, num uint64) error
 	GetAllUsers() ([]*User, error)
 	UpdateCard(ctx context.Context, userId uint64, cardOrderId, card string) error
 	CreateCardRecommend(ctx context.Context, userId uint64, amount float64, vip uint64, address string) error
@@ -1263,14 +1263,19 @@ func (uuc *UserUseCase) CheckCard(ctx context.Context, req *pb.CheckCardRequest,
 	}, nil
 }
 
+var lockCardTwo sync.Mutex
+
 func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest, userId uint64) (*pb.OpenCardReply, error) {
+	lockCardTwo.Lock()
+	defer lockCardTwo.Unlock()
+
 	var (
 		user *User
 		err  error
 	)
 	var (
 		configs       []*Config
-		cardAmount    = float64(100)
+		cardAmount    = float64(200)
 		cardAmountStr string
 	)
 
@@ -1294,14 +1299,20 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 	//	return &pb.OpenCardReply{Status: "先上传证件照片"}, nil
 	//}
 
-	if 5 <= user.UserCount {
-		return &pb.OpenCardReply{Status: "提交已经5次。联系管理员 | post limit 5, contract admin"}, nil
+	//if 5 <= user.UserCount {
+	//	return &pb.OpenCardReply{Status: "提交已经5次。联系管理员 | post limit 5, contract admin"}, nil
+	//}
+	//
+	//if 0 < user.CardTwo {
+	//	return &pb.OpenCardReply{Status: "已提交 | already post"}, nil
+	//}
+
+	var num = uint64(1)
+	if num < req.SendBody.Num {
+		num = req.SendBody.Num
 	}
 
-	if 0 < user.CardTwo {
-		return &pb.OpenCardReply{Status: "已提交 | already post"}, nil
-	}
-
+	cardAmount = float64(num) * cardAmount
 	if uint64(cardAmount) > uint64(user.Amount) {
 		return &pb.OpenCardReply{Status: "账号余额不足" + cardAmountStr + "u | balance not enough " + cardAmountStr + " u"}, nil
 	}
@@ -1366,7 +1377,7 @@ func (uuc *UserUseCase) OpenCardTwo(ctx context.Context, req *pb.OpenCardRequest
 			PhoneCountryCode: "86",
 			Gender:           req.SendBody.Gender,
 			IdCard:           req.SendBody.IdCard,
-		})
+		}, num)
 		if nil != err {
 			return err
 		}

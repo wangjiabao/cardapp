@@ -235,6 +235,7 @@ message RecommendListReply {
 
 message OpenCardRequest {
 	message SendBody {
+		uint64 num = 16;
 		string sign = 1;
 		string email = 2; // 邮箱
 		string firstName = 3; // 名
